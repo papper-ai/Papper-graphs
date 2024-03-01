@@ -7,7 +7,7 @@ app = FastAPI()
 
 @app.get("/")
 async def root():
-    return {"message": "Bipka World"}
+    return {"message": "Hello from graph_vault"}
 
 
 app.include_router(upload_router)

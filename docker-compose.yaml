@@ -19,7 +19,17 @@ services:
     depends_on:
       - neo4j
     ports:
-      - ${HOST_PORT}:8000
+      - 7777:8000
+    command: >
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+  seq2seq:
+    build: seq2seq
+    volumes:
+      - ./seq2seq:/usr/src/seq2seq
+    env_file:
+      - .env
+    ports:
+      - 7778:8000
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
 
