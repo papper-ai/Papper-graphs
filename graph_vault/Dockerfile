@@ -3,9 +3,9 @@ FROM python:3.11.7-slim
 RUN addgroup --gid 10001 papper_user && \
     adduser --uid 10001 --gid 10001 --disabled-password --gecos "" papper_user
 
-WORKDIR /usr/src/graph_rag
+WORKDIR /usr/src/graph_vault
 
-ENV PYTHONPATH=/usr/src/graph_rag/src
+ENV PYTHONPATH=/usr/src/graph_vault/src
 
 COPY /requirements/base.txt /requirements/
 

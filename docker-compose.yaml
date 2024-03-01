@@ -1,30 +1,27 @@
 version: '3.9'
 
 services:
-  db:
-    image: postgres:16.1-bullseye
+  neo4j:
+    image: neo4j:5.17.0-community
     volumes:
-      - db_data:/var/lib/postgresql/data
-    env_file:
-      - .env
+      - graph_data:/neo4j/data:/data
     environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
     ports:
-      - '${DB_CONTAINER_PORT}:${DB_PORT}'
-  graph_rag:
-    build: graph_rag
+      - 7474:7474
+      - 7687:7687
+  graph_vault:
+    build: graph_vault
     volumes:
-      - ./graph_rag:/usr/src/graph_rag
+      - ./graph_vault:/usr/src/graph_vault
     env_file:
       - .env
+    depends_on:
+      - neo4j
     ports:
       - ${HOST_PORT}:8000
-    depends_on:
-      - db
-    command: > 
+    command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
 
 volumes:
-  db_data:
+  graph_data:
