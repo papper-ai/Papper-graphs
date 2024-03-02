@@ -21,7 +21,7 @@ services:
     ports:
       - 7777:8000
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_vault/uvicorn_logging.conf"
   seq2seq:
     build: seq2seq
     volumes:
@@ -31,7 +31,7 @@ services:
     ports:
       - 7778:8000
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/seq2seq/uvicorn_logging.conf"
 
 volumes:
   graph_data:
