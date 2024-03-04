@@ -1,37 +1,32 @@
+import asyncio
+import logging
 from typing import List
 
+import aiohttp
 from fastapi import APIRouter, File, UploadFile, status
 from fastapi.responses import JSONResponse
+
+from src.utils.file_processing import process_files
+from src.utils.pipelines import fill_kb_pipeline
+from src.utils.request import send_request
 
 upload_router = APIRouter(tags=["Upload"])
 
 
 @upload_router.post("/upload", status_code=status.HTTP_200_OK)
-async def upload(files: List[UploadFile] = File(...)):
-    accepted_types = {"text/plain", "application/pdf"}
-    response = []
+async def upload(files: List[UploadFile] = File(...)) -> JSONResponse:
+    status, texts = await process_files(files)
 
-    for file in files:
-        # Check the file type
-        if file.content_type in accepted_types:
-            # Here you can add logic to handle the file based on its type
-            # For example, just appending the file type and name to the response list
-            file_data = {
-                "filename": file.filename,
-                "content_type": file.content_type,
-                "uploaded": "true",
-            }
+    logging.info(texts)
 
-            # Add your processing logic here
-            # ...
-        else:
-            file_data = {
-                "filename": file.filename,
-                "content_type": file.content_type,
-                "uploaded": "false",
-                "message": "File type not accepted",
-            }
+    async with aiohttp.ClientSession() as session:
+        tasks = [send_request(session, text) for text in texts]
+        responses = await asyncio.gather(*tasks)
+    relations = [item for sublist in responses for item in sublist]
 
-        response.append(file_data)
+    logging.info(type(relations))
+    logging.info(relations)
 
-    return JSONResponse(content={"uploaded_files": response})
+    await fill_kb_pipeline(relations)
+
+    return JSONResponse(content={"uploaded_files": status})

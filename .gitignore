@@ -164,3 +164,4 @@ certs/
 
 # Models
 rut5_REBEL_base/
+*.whl
