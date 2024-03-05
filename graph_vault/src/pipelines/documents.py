@@ -9,7 +9,6 @@ from src.readers.plain import read_plain_text
 
 
 async def process_document(document: Document) -> ProcessedDocument:
-    logging.info(document)
 
     file = document.file
     document_id = document.document_id
@@ -34,8 +33,6 @@ async def process_document(document: Document) -> ProcessedDocument:
     ):
         text = await read_docx(file)
 
-    logging.info(text)
-
     return ProcessedDocument(
         document_id=document_id,
         text=text,
@@ -43,7 +40,9 @@ async def process_document(document: Document) -> ProcessedDocument:
 
 
 async def process_documents(documents: List[Document]) -> List[ProcessedDocument]:
-    logging.info(documents)
+    logging.info(
+        f"Starting processing documents: {[document.document_id for document in documents]}"
+    )
 
     tasks = [process_document(document) for document in documents]
     results = await asyncio.gather(*tasks)

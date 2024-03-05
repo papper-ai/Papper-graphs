@@ -22,7 +22,6 @@ async def fill_kb(vault_relations: List[DocumentRelations], vault_id: str) -> Li
     await create_database(vault_id)
     await execute_cyphers(cypher_statements, vault_id)
 
-    logging.info(vault_relations)
     return [document_relations.document_id for document_relations in vault_relations]
 
 

@@ -14,7 +14,6 @@ kb_router = APIRouter(tags=["Knowledge Base"])
 
 @kb_router.post("/upload", status_code=status.HTTP_200_OK)
 async def upload(input: DocumentInput = Depends()) -> JSONResponse:
-    logging.info(input.vault_id)
 
     if len(input.document_ids) != len(input.files):
         return JSONResponse(
