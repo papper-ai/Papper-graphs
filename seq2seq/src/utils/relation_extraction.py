@@ -7,7 +7,7 @@ from src.model.model import CUDA_IS_AVAILABLE, model, tokenizer
 
 
 # from https://huggingface.co/Babelscape/rebel-large
-def extract_relations_from_model_output(text):
+def extract_relations_from_model_output(text: str) -> list:
     relations = []
     relation, subject, relation, object_ = "", "", "", ""
     text = text.strip()
@@ -54,7 +54,7 @@ def extract_relations_from_model_output(text):
     return relations
 
 
-def run_relation_extraction(text):
+def run_relation_extraction(text: str) -> list:
     span_length = 256
 
     inputs = tokenizer([text], return_tensors="pt")
