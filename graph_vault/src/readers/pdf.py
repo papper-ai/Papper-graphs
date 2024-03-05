@@ -1,8 +1,8 @@
-from fastapi import UploadFile
 import fitz  # PyMuPDF
+from fastapi import UploadFile
 
 
-async def process_pdf_text(text):
+async def process_pdf_text(text: str) -> str:
     return text
 
 

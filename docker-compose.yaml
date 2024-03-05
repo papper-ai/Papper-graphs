@@ -2,11 +2,12 @@ version: '3.9'
 
 services:
   neo4j:
-    image: neo4j:5.17.0-community
+    image: neo4j:5.17.0-enterprise
     volumes:
       - graph_data:/neo4j/data:/data
     environment:
       - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
     ports:
       - 7474:7474
       - 7687:7687

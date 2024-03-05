@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from routers.upload import upload_router
+from src.routers.kb_router import kb_router
 
 app = FastAPI()
 
@@ -10,4 +10,4 @@ async def root():
     return {"message": "Hello from graph_vault"}
 
 
-app.include_router(upload_router)
+app.include_router(kb_router)

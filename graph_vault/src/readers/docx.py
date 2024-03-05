@@ -1,11 +1,10 @@
-import logging
 from io import BytesIO
 
 from docx import Document
 from fastapi import UploadFile
 
 
-async def process_docx_text(text):
+async def process_docx_text(text: str) -> str:
     return text
 
 

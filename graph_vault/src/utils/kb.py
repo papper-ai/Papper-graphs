@@ -1,19 +1,24 @@
 from src.utils.spacy import nlp
+import logging
 
 
 class KB:
     def __init__(self):
         self.relations = []
 
-    async def relations_equal(self, r1, r2):
-        return all(r1[attr] == r2[attr] for attr in ["head", "type", "tail"])
+    async def relations_equal(self, relation1, relation2):
+        return all(
+            relation1[attr] == relation2[attr] for attr in ["head", "type", "tail"]
+        )
 
     async def relation_exists(self, r1):
         return any([await self.relations_equal(r1, r2) for r2 in self.relations])
 
-    async def add_relation(self, r):
-        if not await self.relation_exists(r):
-            self.relations.append(r)
+    async def add_relation(self, relation, document_id):
+        logging.info(relation)
+        relation["meta"]["document_id"] = document_id
+        if not await self.relation_exists(relation):
+            self.relations.append(relation)
 
     async def lemmatize(self, text):
         doc = nlp(text)
@@ -26,8 +31,12 @@ class KB:
 
         for entry in self.relations:
             # Lemmatize head and tail in place
-            entry["head"] = (await self.lemmatize(entry["head"])).strip().replace("- ", "")
-            entry["tail"] = (await self.lemmatize(entry["tail"])).strip().replace("- ", "")
+            entry["head"] = (
+                (await self.lemmatize(entry["head"])).strip().replace("- ", "")
+            )
+            entry["tail"] = (
+                (await self.lemmatize(entry["tail"])).strip().replace("- ", "")
+            )
 
             # Skip entry if head is equal to tail
             if entry["head"] == entry["tail"]:
