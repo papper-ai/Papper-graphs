@@ -16,7 +16,7 @@ services:
     volumes:
       - ./graph_vault:/usr/src/graph_vault
     env_file:
-      - .env
+      - ./graph_vault/.env
     depends_on:
       - neo4j
     ports:
@@ -27,10 +27,32 @@ services:
     build: relation_extraction_model
     volumes:
       - ./relation_extraction_model:/usr/src/relation_extraction_model
-    env_file:
-      - .env
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/relation_extraction_model/uvicorn_logging.conf"
+  documents_service_postgres:
+    image: postgres:16.1-bullseye
+    volumes:
+      - documents_service_postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DOCUMENTS_SERVICE_POSTGRES_DB_NAME}
+      - POSTGRES_USER=${DOCUMENTS_SERVICE_POSTGRES_DB_USER}
+      - POSTGRES_PASSWORD=${DOCUMENTS_SERVICE_POSTGRES_DB_PASSWORD}
+    ports:
+      - ${DOCUMENTS_SERVICE_POSTGRES_DB_CONTAINER_PORT}:5432
+  documents_service:
+    build: documents_service
+    volumes:
+      - ./documents_service:/usr/src/documents_service
+    env_file:
+      - ./documents_service/.env
+    ports:
+      - 7778:8000
+    depends_on:
+      - documents_service_postgres
+    command: > 
+      sh -c "alembic upgrade head && 
+      uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/documents_service/uvicorn_logging.conf"
 
 volumes:
   graph_data:
+  documents_service_postgres_data:
