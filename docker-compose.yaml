@@ -49,7 +49,7 @@ services:
       - 7778:8000
     depends_on:
       - documents_service_postgres
-    command: > 
+    command: >
       sh -c "alembic upgrade head && 
       uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/documents_service/uvicorn_logging.conf"
 

@@ -11,7 +11,7 @@ class VaultType(str, Enum):
 
 
 class CreateVaultRequest(BaseModel):
-    uuid: uuid.UUID
+    user_id: uuid.UUID
     vault_name: str
     vault_type: VaultType
 
