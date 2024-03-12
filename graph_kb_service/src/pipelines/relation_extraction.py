@@ -5,13 +5,12 @@ from typing import List
 
 import aiohttp
 
-from src.models.documents import ProcessedDocument
-from src.models.relations import DocumentRelations
+from src.kb_router.schemas import Document, DocumentRelations
 from src.utils.request import send_request
 
 
 async def request_relation_extraction(
-    documents: List[ProcessedDocument],
+    documents: List[Document],
 ) -> List[DocumentRelations]:
     start_time = time.perf_counter()
 

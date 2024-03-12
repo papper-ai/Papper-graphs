@@ -1,12 +1,13 @@
-import logging
 from typing import List
 
 from src.database.queries import create_database, drop_database, execute_cyphers
-from src.models.relations import DocumentRelations
+from src.kb_router.schemas import DocumentRelations
 from src.utils.kb import KB
 
 
-async def fill_kb(vault_relations: List[DocumentRelations], vault_id: str) -> List[str]:
+async def fill_kb(
+    vault_relations: List[DocumentRelations], vault_id: str
+) -> List[str]:
     kb = KB()
 
     for document_relations in vault_relations:

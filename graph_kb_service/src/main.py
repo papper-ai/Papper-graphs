@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from src.routers.kb_router import kb_router
+from src.kb_router.router import kb_router
 
 app = FastAPI()
 

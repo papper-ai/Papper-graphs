@@ -1,5 +1,6 @@
-from src.utils.spacy import nlp
 import logging
+
+from src.utils.spacy import nlp
 
 
 class KB:

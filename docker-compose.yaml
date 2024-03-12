@@ -11,18 +11,18 @@ services:
     ports:
       - 7474:7474
       - 7687:7687
-  graph_vault:
-    build: graph_vault
+  graph_kb_service:
+    build: graph_kb_service
     volumes:
-      - ./graph_vault:/usr/src/graph_vault
+      - ./graph_kb_service:/usr/src/graph_kb_service
     env_file:
-      - ./graph_vault/.env
+      - ./graph_kb_service/.env
     depends_on:
       - neo4j
     ports:
       - 7777:8000
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_vault/uvicorn_logging.conf"
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_kb_service/uvicorn_logging.conf"
   relation_extraction_model:
     build: relation_extraction_model
     volumes:

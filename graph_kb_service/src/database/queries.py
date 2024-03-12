@@ -1,4 +1,6 @@
 import logging
+import random
+import string
 import time
 from typing import List
 
@@ -10,16 +12,23 @@ from src.database.neo4j import neo4j_driver
 
 async def create_database(vault_id: str) -> None:
     async with neo4j_driver.session() as session:
-        await session.run(f"CREATE DATABASE {vault_id} IF NOT EXISTS")
+
+        # Add prefix to the name of format uuid to avoid naming restrictions
+        await session.run(f"CREATE DATABASE `db-{vault_id}` IF NOT EXISTS")
+
+        # Create an alias that avoids the restrictions
+        await session.run(
+            f"CREATE ALIAS `{vault_id}` IF NOT EXISTS FOR DATABASE `db-{vault_id}`"
+        )
 
 
 async def drop_database(vault_id: str) -> None:
     async with neo4j_driver.session() as session:
         try:
-            await session.run(f"DROP DATABASE {vault_id}")
+            await session.run(f"DROP ALIAS `{vault_id}` IF EXISTS FOR DATABASE")
+            await session.run(f"DROP DATABASE `db-{vault_id}`")
         except ClientError as e:
-            error_code = e.code
-            if error_code == "Neo.ClientError.Database.DatabaseNotFound":
+            if e.code == "Neo.ClientError.Database.DatabaseNotFound":
                 raise HTTPException(
                     status_code=404, detail=f"Database {vault_id} not found"
                 )
