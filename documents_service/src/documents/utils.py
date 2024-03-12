@@ -3,7 +3,7 @@ import uuid
 from fastapi import UploadFile
 
 from src.documents.schemas import CreateVaultRequest
-from src.repositories.models import Vault, Document
+from src.repositories.models import Document, Vault
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
 from src.utils.processors import read_document
 
@@ -22,12 +22,12 @@ async def add_vault(
 
     await vault_repository.add(vault)
 
-    return id
+    return vault
 
 
 async def add_document(
     file: UploadFile, vault_id: uuid, document_repository: DocumentRepository
-) -> uuid:
+) -> Document:
     id = uuid.uuid4()  # Generate random unique identifier
 
     text = await read_document(file)
@@ -41,4 +41,4 @@ async def add_document(
 
     await document_repository.add(document)
 
-    return id
+    return document

@@ -1,6 +1,4 @@
-import logging
-
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile, status
 
 from src.utils.readers import read_docx, read_pdf, read_plain_text
 
@@ -13,8 +11,10 @@ async def read_document(file: UploadFile) -> str:
     }
 
     if file.content_type not in accepted_types:
-        logging.error(f"File type not accepted: {file.content_type}")
-        return
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Unsupported file type",
+        )
 
     if file.content_type == "text/plain":
         text = await read_plain_text(file)

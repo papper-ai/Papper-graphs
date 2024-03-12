@@ -1,11 +1,15 @@
+import asyncio
 import logging
 from typing import List
 
-from fastapi import APIRouter, Body, Depends, File, UploadFile, status
+from fastapi import APIRouter, Body, File, UploadFile, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
-from src.documents.schemas import CreateVaultRequest
+from src.documents.schemas import CreateVaultRequest, RequestToGraphKBService, Document
 from src.documents.utils import add_document, add_vault
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
+from src.utils.requests import send_request
 
 documents_router = APIRouter(tags=["Documents"])
 
@@ -14,12 +18,23 @@ documents_router = APIRouter(tags=["Documents"])
 async def create_vault(
     create_vault_request: CreateVaultRequest = Body(...),
     files: List[UploadFile] = File(...),
-    vault_repository: VaultRepository = Depends(VaultRepository),
-    document_repository: DocumentRepository = Depends(DocumentRepository),
-):
+) -> JSONResponse:
     logging.info(f"Files received: {[f.filename for f in files]}")
 
-    vault_id = await add_vault(create_vault_request, vault_repository)
+    vault = await add_vault(create_vault_request, VaultRepository())
 
-    for file in files:
-        await add_document(file, vault_id, document_repository)
+    documents = await asyncio.gather(
+        *[add_document(file, vault.id, DocumentRepository()) for file in files]
+    )
+    request_body = jsonable_encoder(
+        RequestToGraphKBService(
+            vault_id=vault.id,
+            documents=[
+                Document(document_id=doc.id, text=doc.text) for doc in documents
+            ],
+        )
+    )
+    await send_request(request_body)
+
+    # Return the created vault representation
+    return jsonable_encoder(vault)

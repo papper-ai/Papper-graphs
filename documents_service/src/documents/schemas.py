@@ -1,7 +1,8 @@
+import json
 import uuid
 from enum import Enum
+from typing import List
 
-import json
 from pydantic import BaseModel, model_validator
 
 
@@ -21,3 +22,13 @@ class CreateVaultRequest(BaseModel):
         if isinstance(value, str):
             return cls(**json.loads(value))
         return value
+
+
+class Document(BaseModel):
+    document_id: uuid.UUID
+    text: str
+
+
+class RequestToGraphKBService(BaseModel):
+    vault_id: uuid.UUID
+    documents: List[Document]
