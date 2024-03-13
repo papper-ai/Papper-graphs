@@ -5,12 +5,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, File, UploadFile, status
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 
-from src.documents.schemas import CreateVaultRequest, RequestToGraphKBService, Document
+from src.documents.schemas import CreateVaultRequest, Document, RequestToGraphKBService
 from src.documents.utils import add_document, add_vault
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
-from src.utils.requests import send_upload_request, send_delete_request
+from src.utils.requests import send_delete_request, send_upload_request
 
 documents_router = APIRouter(tags=["Documents"])
 
@@ -43,19 +44,30 @@ async def create_vault(
 
 @documents_router.delete("/delete_vault", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vault(vault_id: UUID = Body(...)) -> None:
-    try:
+    vault_repository = VaultRepository()
+
+    if await vault_repository.get(vault_id):
         await VaultRepository().delete(vault_id)
-    except NoResultFound:
+        await send_delete_request(body=jsonable_encoder(vault_id))
+    else:
         raise HTTPException(status_code=404, detail="Vault not found")
 
-    await send_delete_request(request_body=jsonable_encoder(vault_id))
+
+@documents_router.post("/get_vault_documents", status_code=status.HTTP_200_OK)
+async def get_vault_documents(vault_id: UUID = Body(...)) -> JSONResponse:
+    vault_repository = VaultRepository()
+
+    if await vault_repository.get(vault_id):
+        documents = await vault_repository.get_vault_documents(vault_id)
+        return jsonable_encoder(documents)
+    else:
+        raise HTTPException(status_code=404, detail="Vault not found")
 
 
-@documents_router.get("/get_vault_documents", status_code=status.HTTP_200_OK)
-async def get_vault_documents(vault_id: UUID = Body(...)) -> None:
-    pass
+@documents_router.post("/get_users_vaults", status_code=status.HTTP_200_OK)
+async def get_users_vaults(user_id: UUID = Body(...)) -> JSONResponse:
+    vault_repository = VaultRepository()
 
+    vaults = await vault_repository.get_users_vaults(user_id)
 
-@documents_router.get("/get_users_vaults", status_code=status.HTTP_200_OK)
-async def get_users_vaults(user_id: UUID = Body(...)) -> None:
-    pass
+    return jsonable_encoder(vaults)

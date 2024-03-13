@@ -12,7 +12,7 @@ class Document(Base):
     id = mapped_column(UUID(as_uuid=True), primary_key=True)
     name = mapped_column(String, nullable=False, unique=False)
     text = mapped_column(Text)
-    vault_id = mapped_column(ForeignKey("vaults.id"), nullable=False)    
+    vault_id = mapped_column(ForeignKey("vaults.id"), nullable=False)
 
     vaults = relationship("Vault", back_populates="documents")
 

@@ -13,7 +13,7 @@ async def send_upload_request(body: RequestToGraphKBService) -> dict:
 
 async def send_delete_request(body: str) -> dict:
     async with aiohttp.ClientSession() as session:
-        async with session.post(
-            "http://graph_kb_service:8000/upload", json=body
+        async with session.delete(
+            "http://graph_kb_service:8000/delete", json=body
         ) as response:
             return await response.json()

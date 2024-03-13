@@ -4,7 +4,6 @@ from uuid import UUID
 
 from sqlalchemy import pool, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.exc import NoResultFound
 
 from src.config import settings
 from src.repositories import models
@@ -41,8 +40,8 @@ class DocumentRepository(AbstractRepository):
 
     async def get(self, id: UUID) -> typing.Union[models.Document, None]:
         async with self.session as session:
-            user = await session.get(models.Document, id)
-            return user
+            document = await session.get(models.Document, id)
+            return document
 
 
 class VaultRepository(AbstractRepository):
@@ -56,32 +55,39 @@ class VaultRepository(AbstractRepository):
 
     async def get(self, id: UUID) -> typing.Union[models.Vault, None]:
         async with self.session as session:
-            user = await session.get(models.Vault, id)
-            return user
+            vault = await session.get(models.Vault, id)
+            return vault
+
+    async def delete(self, id: UUID) -> None:
+        async with self.session as session:
+            async with session.begin():
+                entity = await session.get(models.Vault, id)
+
+                if entity:
+                    # Query and delete all documents associated with the vault
+                    documents = await session.execute(
+                        select(models.Document).where(models.Document.vault_id == id)
+                    )
+                    for document in documents.scalars().all():
+                        await session.delete(document)
+
+                    await session.delete(entity)
 
     async def get_vault_documents(
         self, id: UUID
     ) -> typing.Optional[typing.List[models.Document]]:
         async with self.session as session:
-            return await session.execute(
+            # Query and delete all documents associated with the vault
+            documents = await session.execute(
                 select(models.Document).where(models.Document.vault_id == id)
-            ).all()
-        
-    async def delete(self, id: UUID) -> None:
+            )
+            return documents.scalars().all()
+
+    async def get_users_vaults(
+        self, user_id: UUID
+    ) -> typing.Optional[typing.List[models.Vault]]:
         async with self.session as session:
-            async with session.begin():
-                entity = await session.get(models.Vault, id)
-                if not entity:
-                    raise NoResultFound("Vault not found")
-
-                # Query and delete all documents associated with the vault
-                documents = await session.execute(
-                    select(models.Document).where(models.Document.vault_id == id)
-                )
-                for document in documents.scalars().all():
-                    await session.delete(document)
-
-                # Query and delete the vault itself
-                entity = await session.get(models.Vault, id)
-                if entity:
-                    await session.delete(entity)
+            vaults = await session.execute(
+                select(models.Vault).where(models.Vault.user_id == user_id)
+            )
+            return vaults.scalars().all()
