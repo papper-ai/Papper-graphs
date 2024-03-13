@@ -4,6 +4,8 @@ import fitz
 from docx import Document
 from fastapi import UploadFile
 
+from src.utils.exceptions import UnsupportedFileTypeException
+
 
 async def read_docx(file: UploadFile) -> str:
     # Read the uploaded file into an in-memory bytes buffer
@@ -46,5 +48,28 @@ async def read_pdf(file: UploadFile) -> str:
 async def read_plain_text(file: UploadFile) -> str:
     contents = await file.read()
     text = contents.decode("utf-8")
+
+    return text
+
+
+async def read_document(file: UploadFile) -> str:
+    accepted_types = {
+        "text/plain",
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }
+
+    if file.content_type not in accepted_types:
+        raise UnsupportedFileTypeException(file.content_type)
+
+    if file.content_type == "text/plain":
+        text = await read_plain_text(file)
+    elif file.content_type == "application/pdf":
+        text = await read_pdf(file)
+    elif (
+        file.content_type
+        == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ):
+        text = await read_docx(file)
 
     return text

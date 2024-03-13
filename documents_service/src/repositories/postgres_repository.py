@@ -38,7 +38,7 @@ class DocumentRepository(AbstractRepository):
             async with session.begin():
                 session.add(entity)
 
-    async def get(self, id: UUID) -> typing.Union[models.Document, None]:
+    async def get(self, id: UUID) -> models.Document | None:
         async with self.session as session:
             document = await session.get(models.Document, id)
             return document
@@ -53,7 +53,7 @@ class VaultRepository(AbstractRepository):
             async with session.begin():
                 session.add(entity)
 
-    async def get(self, id: UUID) -> typing.Union[models.Vault, None]:
+    async def get(self, id: UUID) -> models.Vault | None:
         async with self.session as session:
             vault = await session.get(models.Vault, id)
             return vault

@@ -5,7 +5,7 @@ from fastapi import UploadFile
 from src.documents.schemas import CreateVaultRequest
 from src.repositories.models import Document, Vault
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
-from src.utils.processors import read_document
+from src.utils.readers import read_document
 
 
 async def add_vault(

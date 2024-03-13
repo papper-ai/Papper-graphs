@@ -12,6 +12,7 @@ from src.documents.schemas import CreateVaultRequest, Document, RequestToGraphKB
 from src.documents.utils import add_document, add_vault
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
 from src.utils.requests import send_delete_request, send_upload_request
+from src.utils.exceptions import UnsupportedFileTypeException
 
 documents_router = APIRouter(tags=["Documents"])
 
@@ -25,9 +26,15 @@ async def create_vault(
 
     vault = await add_vault(create_vault_request, VaultRepository())
 
-    documents = await asyncio.gather(
-        *[add_document(file, vault.id, DocumentRepository()) for file in files]
-    )
+    try:
+        documents = await asyncio.gather(
+            *[add_document(file, vault.id, DocumentRepository()) for file in files]
+        )
+    except UnsupportedFileTypeException as e:
+        logging.error(e)
+        await VaultRepository().delete(vault.id)
+        raise HTTPException(status_code=406, detail=e.message)
+
     request_body = jsonable_encoder(
         RequestToGraphKBService(
             vault_id=vault.id,
