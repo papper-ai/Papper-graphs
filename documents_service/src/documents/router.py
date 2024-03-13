@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from typing import List
+from uuid import UUID
 
 from fastapi import APIRouter, Body, File, UploadFile, status
 from fastapi.encoders import jsonable_encoder
@@ -9,7 +10,7 @@ from fastapi.responses import JSONResponse
 from src.documents.schemas import CreateVaultRequest, RequestToGraphKBService, Document
 from src.documents.utils import add_document, add_vault
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
-from src.utils.requests import send_request
+from src.utils.requests import send_upload_request, send_delete_request
 
 documents_router = APIRouter(tags=["Documents"])
 
@@ -34,7 +35,27 @@ async def create_vault(
             ],
         )
     )
-    await send_request(request_body)
+    await send_upload_request(request_body)
 
     # Return the created vault representation
     return jsonable_encoder(vault)
+
+
+@documents_router.delete("/delete_vault", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_vault(vault_id: UUID = Body(...)) -> None:
+    try:
+        await VaultRepository().delete(vault_id)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Vault not found")
+
+    await send_delete_request(request_body=jsonable_encoder(vault_id))
+
+
+@documents_router.get("/get_vault_documents", status_code=status.HTTP_200_OK)
+async def get_vault_documents(vault_id: UUID = Body(...)) -> None:
+    pass
+
+
+@documents_router.get("/get_users_vaults", status_code=status.HTTP_200_OK)
+async def get_users_vaults(user_id: UUID = Body(...)) -> None:
+    pass
