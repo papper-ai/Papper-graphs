@@ -4,7 +4,7 @@ import fitz
 from docx import Document
 from fastapi import UploadFile
 
-from src.utils.exceptions import UnsupportedFileTypeException
+from src.utils.exceptions import UnsupportedFileType
 
 
 async def read_docx(file: UploadFile) -> str:
@@ -60,7 +60,7 @@ async def read_document(file: UploadFile) -> str:
     }
 
     if file.content_type not in accepted_types:
-        raise UnsupportedFileTypeException(file.content_type)
+        raise UnsupportedFileType(file.content_type)
 
     if file.content_type == "text/plain":
         text = await read_plain_text(file)

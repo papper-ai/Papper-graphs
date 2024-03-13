@@ -1,4 +1,4 @@
-class UnsupportedFileTypeException(Exception):
+class UnsupportedFileType(Exception):
     """Exception raised for unsupported file types."""
 
     def __init__(self, content_type, message="Unsupported file type"):
