@@ -1,7 +1,8 @@
 import json
-import uuid
+from datetime import datetime
 from enum import Enum
 from typing import List
+from uuid import UUID
 
 from pydantic import BaseModel, model_validator
 
@@ -12,7 +13,7 @@ class VaultType(str, Enum):
 
 
 class CreateVaultRequest(BaseModel):
-    user_id: uuid.UUID
+    user_id: UUID
     vault_name: str
     vault_type: VaultType
 
@@ -25,10 +26,31 @@ class CreateVaultRequest(BaseModel):
 
 
 class Document(BaseModel):
-    document_id: uuid.UUID
+    document_id: UUID
     text: str
 
 
 class RequestToGraphKBService(BaseModel):
-    vault_id: uuid.UUID
+    vault_id: UUID
     documents: List[Document]
+
+
+class VaultResponse(BaseModel):
+    id: UUID
+    name: str
+    type: VaultType
+    created_at: datetime
+    user_id: UUID
+
+    class Config:
+        from_attributes = True
+
+
+class DocumentResponse(BaseModel):
+    id: UUID
+    name: str
+    text: str
+    vault_id: UUID
+
+    class Config:
+        from_attributes = True
