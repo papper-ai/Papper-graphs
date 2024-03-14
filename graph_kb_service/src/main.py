@@ -7,7 +7,7 @@ app = FastAPI()
 
 @app.get("/")
 async def root():
-    return {"message": "Hello from graph_vault"}
+    return {"message": "Hello from graph_kb_service"}
 
 
 app.include_router(kb_router)

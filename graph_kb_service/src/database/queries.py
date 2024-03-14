@@ -1,6 +1,4 @@
 import logging
-import random
-import string
 import time
 from typing import List
 
@@ -12,7 +10,6 @@ from src.database.neo4j import neo4j_driver
 
 async def create_database(vault_id: str) -> None:
     async with neo4j_driver.session() as session:
-
         # Add prefix to the name of format uuid to avoid naming restrictions
         await session.run(f"CREATE DATABASE `db-{vault_id}` IF NOT EXISTS")
 

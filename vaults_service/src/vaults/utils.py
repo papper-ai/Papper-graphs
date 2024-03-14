@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import UploadFile
 
-from src.documents.schemas import CreateVaultRequest
+from src.vaults.schemas import CreateVaultRequest
 from src.repositories.models import Document, Vault
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
 from src.utils.readers import read_document

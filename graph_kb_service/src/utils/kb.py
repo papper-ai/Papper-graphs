@@ -1,5 +1,3 @@
-import logging
-
 from src.utils.spacy import nlp
 
 
@@ -16,7 +14,6 @@ class KB:
         return any([await self.relations_equal(r1, r2) for r2 in self.relations])
 
     async def add_relation(self, relation, document_id):
-        logging.info(relation)
         relation["meta"]["document_id"] = document_id
         if not await self.relation_exists(relation):
             self.relations.append(relation)

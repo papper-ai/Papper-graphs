@@ -7,23 +7,23 @@ from fastapi import APIRouter, Body, Depends, File, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 
-from src.documents.dependencies import vault_exists
-from src.documents.schemas import (
+from src.vaults.dependencies import vault_exists
+from src.vaults.schemas import (
     CreateVaultRequest,
     Document,
     DocumentResponse,
     RequestToGraphKBService,
     VaultResponse,
 )
-from src.documents.utils import add_document, add_vault
+from src.vaults.utils import add_document, add_vault
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
 from src.utils.exceptions import UnsupportedFileType
 from src.utils.requests import send_delete_request, send_upload_request
 
-documents_router = APIRouter(tags=["Documents"])
+vaults_router = APIRouter(tags=["Vaults"])
 
 
-@documents_router.post(
+@vaults_router.post(
     "/create_vault", status_code=status.HTTP_201_CREATED, response_model=VaultResponse
 )
 async def create_vault(
@@ -57,7 +57,7 @@ async def create_vault(
     return VaultResponse.model_validate(vault)
 
 
-@documents_router.delete("/delete_vault", status_code=status.HTTP_204_NO_CONTENT)
+@vaults_router.delete("/delete_vault", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vault(
     vault_id: UUID = Body(...),
     vault_repository: VaultRepository = Depends(vault_exists),
@@ -66,7 +66,7 @@ async def delete_vault(
     await send_delete_request(body=jsonable_encoder(vault_id))
 
 
-@documents_router.post(
+@vaults_router.post(
     "/get_vault_documents",
     status_code=status.HTTP_200_OK,
     response_model=List[DocumentResponse],
@@ -80,7 +80,7 @@ async def get_vault_documents(
     return [DocumentResponse.model_validate(document) for document in documents]
 
 
-@documents_router.post(
+@vaults_router.post(
     "/get_users_vaults",
     status_code=status.HTTP_200_OK,
     response_model=List[VaultResponse],

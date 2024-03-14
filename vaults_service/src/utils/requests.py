@@ -1,6 +1,6 @@
 import aiohttp
 
-from src.documents.schemas import RequestToGraphKBService
+from src.vaults.schemas import RequestToGraphKBService
 
 
 async def send_upload_request(body: RequestToGraphKBService) -> dict:

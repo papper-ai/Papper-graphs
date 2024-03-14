@@ -19,6 +19,7 @@ services:
       - ./graph_kb_service/.env
     depends_on:
       - neo4j
+      - relation_extraction_model
     ports:
       - 7777:8000
     command: >
@@ -29,30 +30,31 @@ services:
       - ./relation_extraction_model:/usr/src/relation_extraction_model
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/relation_extraction_model/uvicorn_logging.conf"
-  documents_service_postgres:
+  vaults_service_postgres:
     image: postgres:16.1-bullseye
     volumes:
-      - documents_service_postgres_data:/var/lib/postgresql/data
+      - vaults_service_postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=${DOCUMENTS_SERVICE_POSTGRES_DB_NAME}
-      - POSTGRES_USER=${DOCUMENTS_SERVICE_POSTGRES_DB_USER}
-      - POSTGRES_PASSWORD=${DOCUMENTS_SERVICE_POSTGRES_DB_PASSWORD}
+      - POSTGRES_DB=${VAULTS_SERVICE_POSTGRES_DB_NAME}
+      - POSTGRES_USER=${VAULTS_SERVICE_POSTGRES_DB_USER}
+      - POSTGRES_PASSWORD=${VAULTS_SERVICE_POSTGRES_DB_PASSWORD}
     ports:
-      - ${DOCUMENTS_SERVICE_POSTGRES_DB_CONTAINER_PORT}:5432
-  documents_service:
-    build: documents_service
+      - ${VAULTS_SERVICE_POSTGRES_DB_CONTAINER_PORT}:5432
+  vaults_service:
+    build: vaults_service
     volumes:
-      - ./documents_service:/usr/src/documents_service
+      - ./vaults_service:/usr/src/vaults_service
     env_file:
-      - ./documents_service/.env
+      - ./vaults_service/.env
     ports:
       - 7778:8000
     depends_on:
-      - documents_service_postgres
+      - vaults_service_postgres
+      - graph_kb_service
     command: >
       sh -c "alembic upgrade head && 
-      uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/documents_service/uvicorn_logging.conf"
+      uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/vaults_service/uvicorn_logging.conf"
 
 volumes:
   graph_data:
-  documents_service_postgres_data:
+  vaults_service_postgres_data:
