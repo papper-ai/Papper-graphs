@@ -7,6 +7,14 @@ from fastapi import APIRouter, Body, Depends, File, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 
+from src.repositories.postgres_repository import DocumentRepository, VaultRepository
+from src.utils.exceptions import UnsupportedFileType
+from src.utils.requests import (
+    send_delete_request_to_graph_kb_service,
+    send_delete_request_to_vector_kb_service,
+    send_upload_request_to_graph_kb_service,
+    send_upload_request_to_vector_kb_service,
+)
 from src.vaults.dependencies import vault_exists
 from src.vaults.schemas import (
     CreateVaultRequest,
@@ -14,11 +22,9 @@ from src.vaults.schemas import (
     DocumentResponse,
     RequestToGraphKBService,
     VaultResponse,
+    VaultType,
 )
 from src.vaults.utils import add_document, add_vault
-from src.repositories.postgres_repository import DocumentRepository, VaultRepository
-from src.utils.exceptions import UnsupportedFileType
-from src.utils.requests import send_delete_request, send_upload_request
 
 vaults_router = APIRouter(tags=["Vaults"])
 
@@ -51,7 +57,10 @@ async def create_vault(
             ],
         )
     )
-    await send_upload_request(upload_request_body)
+    if create_vault_request.vault_type == VaultType.GRAPH:
+        await send_upload_request_to_graph_kb_service(upload_request_body)
+    else:
+        await send_upload_request_to_vector_kb_service(upload_request_body)
 
     # Return the created vault representation
     return VaultResponse.model_validate(vault)
@@ -61,9 +70,13 @@ async def create_vault(
 async def delete_vault(
     vault_id: UUID = Body(...),
     vault_repository: VaultRepository = Depends(vault_exists),
-):
+):  
+    vault_type = await vault_repository.get_vault_type(vault_id)
     await vault_repository.delete(vault_id)
-    await send_delete_request(body=jsonable_encoder(vault_id))
+    if vault_type == VaultType.GRAPH:
+        await send_delete_request_to_graph_kb_service(body=jsonable_encoder(vault_id))
+    else:
+        await send_delete_request_to_vector_kb_service(body=jsonable_encoder(vault_id))
 
 
 @vaults_router.post(
