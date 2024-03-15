@@ -1,3 +1,4 @@
+import re
 from io import BytesIO
 
 import fitz
@@ -5,6 +6,15 @@ from docx import Document
 from fastapi import UploadFile
 
 from src.utils.exceptions import UnsupportedFileType
+
+
+async def process_text(text: str) -> str:
+    text = re.sub(
+        r"[ \t]+\n", "\n", text
+    )  # Replace any number of spaces followed by a newline with just a newline
+    text = text.replace("-\n", "")  # Remove line breaks inside of words
+
+    return text
 
 
 async def read_docx(file: UploadFile) -> str:
@@ -72,4 +82,6 @@ async def read_document(file: UploadFile) -> str:
     ):
         text = await read_docx(file)
 
-    return text
+    processed_text = await process_text(text)
+
+    return processed_text

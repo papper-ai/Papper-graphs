@@ -31,7 +31,7 @@ async def add_vault(
 
 
 async def add_document(
-    file: UploadFile, vault_id: uuid, document_repository: DocumentRepository
+    file: UploadFile, vault_id: uuid.UUID, document_repository: DocumentRepository
 ) -> Document:
     id = uuid.uuid4()  # Generate random unique identifier
 
@@ -49,7 +49,7 @@ async def add_document(
     return document
 
 
-async def delete_documents_background(vault_id, vault_type):
+async def delete_documents_background(vault_id: uuid.UUID, vault_type: VaultType) -> None:
     if vault_type == VaultType.GRAPH:
         await send_delete_request_to_graph_kb_service(body=jsonable_encoder(vault_id))
     else:
