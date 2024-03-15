@@ -1,11 +1,16 @@
 import uuid
 
 from fastapi import UploadFile
+from fastapi.encoders import jsonable_encoder
 
-from src.vaults.schemas import CreateVaultRequest
 from src.repositories.models import Document, Vault
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
 from src.utils.readers import read_document
+from src.utils.requests import (
+    send_delete_request_to_graph_kb_service,
+    send_delete_request_to_vector_kb_service,
+)
+from src.vaults.schemas import CreateVaultRequest, VaultType
 
 
 async def add_vault(
@@ -42,3 +47,10 @@ async def add_document(
     await document_repository.add(document)
 
     return document
+
+
+async def delete_documents_background(vault_id, vault_type):
+    if vault_type == VaultType.GRAPH:
+        await send_delete_request_to_graph_kb_service(body=jsonable_encoder(vault_id))
+    else:
+        await send_delete_request_to_vector_kb_service(body=jsonable_encoder(vault_id))
