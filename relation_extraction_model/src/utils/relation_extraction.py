@@ -135,11 +135,8 @@ def run_relation_extraction(text: str) -> list:
 
         # Process decoded relations
         for i, sentence_pred in enumerate(batch_decoded_preds):
-            current_span_index = (batch_start + i) // num_return_sequences
-            current_span_input_ids = tensor_ids[current_span_index]
-            current_span_text = tokenizer.decode(
-                current_span_input_ids, skip_special_tokens=True
-            )
+            current_span_input_ids = batch_inputs["input_ids"][i // num_return_sequences]
+            current_span_text = tokenizer.decode(current_span_input_ids, skip_special_tokens=True)
             relations = extract_relations_from_model_output(sentence_pred)
             for relation in relations:
                 relation["meta"] = {
