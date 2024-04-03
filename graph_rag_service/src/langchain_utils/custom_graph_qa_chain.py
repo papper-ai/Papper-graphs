@@ -9,11 +9,9 @@ from langchain.chains.base import Chain
 from langchain.chains.graph_qa.cypher_utils import CypherQueryCorrector, Schema
 from langchain.chains.graph_qa.prompts import CYPHER_GENERATION_PROMPT, CYPHER_QA_PROMPT
 from langchain.chains.llm import LLMChain
-from langchain_community.graphs.graph_store import GraphStore
 from langchain_core.callbacks import CallbackManagerForChainRun
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts import BasePromptTemplate
-from langchain_core.pydantic_v1 import Field
 from src.database.neo4j import neo4j_driver
 from src.database.queries import get_graph_view
 
@@ -66,7 +64,6 @@ class CustomGraphCypherQAChain(Chain):
         See https://python.langchain.com/docs/security for more information.
     """
 
-    graph: GraphStore = Field(exclude=True)
     cypher_generation_chain: LLMChain
     qa_chain: LLMChain
     graph_schema: str
