@@ -42,6 +42,7 @@ qa_prompt = PromptTemplate(
     input_variables=["context", "question"], template=CYPHER_QA_TEMPLATE
 )
 
+
 RU_PROMPT_TEMPLATE = """Ответь человеку максимально полезно и точно. У тебя есть доступ к инструменту "query-knowledge-base-tool":
 {tools}
 
@@ -79,7 +80,7 @@ Action:
 
 Начинай! Помни, что ВСЕГДА нужно отвечать действительным json-объектом для одного действия. Используйте инструменты при необходимости. Отвечайте напрямую, если это уместно. Формат - Action:```$JSON_BLOB```затем Observation"""
 
-# Changed prompt template to Russian
+# Change pre-made prompt template to Russian
 (ru_prompt := hub.pull("hwchase17/structured-chat-agent")).messages[
     0
 ].prompt.template = RU_PROMPT_TEMPLATE

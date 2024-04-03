@@ -14,6 +14,7 @@ BASE_DIR = Path(__file__).parent
 class Settings(BaseSettings):
     neo4j_user: str = "neo4j"
     neo4j_password: str
+    gigachat_credentials: str
 
     @property
     def neo4j_uri(self) -> str:
