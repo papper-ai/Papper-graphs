@@ -3,15 +3,13 @@ import logging
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, File, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, UploadFile, status, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 
 from src.repositories.postgres_repository import DocumentRepository, VaultRepository
 from src.utils.exceptions import UnsupportedFileType
 from src.utils.requests import (
-    send_delete_request_to_graph_kb_service,
-    send_delete_request_to_vector_kb_service,
     send_upload_request_to_graph_kb_service,
     send_upload_request_to_vector_kb_service,
 )
@@ -24,7 +22,7 @@ from src.vaults.schemas import (
     VaultResponse,
     VaultType,
 )
-from src.vaults.utils import add_document, add_vault
+from src.vaults.utils import add_document, add_vault, delete_documents_background
 
 vaults_router = APIRouter(tags=["Vaults"])
 
@@ -68,15 +66,14 @@ async def create_vault(
 
 @vaults_router.delete("/delete_vault", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vault(
+    background_tasks: BackgroundTasks,
     vault_id: UUID = Body(...),
     vault_repository: VaultRepository = Depends(vault_exists),
-):  
+):
     vault_type = await vault_repository.get_vault_type(vault_id)
     await vault_repository.delete(vault_id)
-    if vault_type == VaultType.GRAPH:
-        await send_delete_request_to_graph_kb_service(body=jsonable_encoder(vault_id))
-    else:
-        await send_delete_request_to_vector_kb_service(body=jsonable_encoder(vault_id))
+
+    background_tasks.add_task(delete_documents_background, vault_id, vault_type)
 
 
 @vaults_router.post(
