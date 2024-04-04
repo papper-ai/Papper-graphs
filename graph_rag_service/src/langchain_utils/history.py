@@ -10,7 +10,7 @@ def construct_langchain_history(
     chat_history = []
     for message in history:
         if message.role == Role.USER:
-            chat_history.append(HumanMessage(content=message["content"]))
+            chat_history.append(HumanMessage(content=message.content))
         elif message.role == Role.AI:
-            chat_history.append(AIMessage(content=message["content"]))
+            chat_history.append(AIMessage(content=message.content))
     return chat_history

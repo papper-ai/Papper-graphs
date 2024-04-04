@@ -11,7 +11,6 @@ chain = CustomGraphCypherQAChain.from_llm(
     return_intermediate_steps=True,
     cypher_prompt=cypher_prompt,
     qa_prompt=qa_prompt,
-    validate_cypher=True,
 )
 
 
