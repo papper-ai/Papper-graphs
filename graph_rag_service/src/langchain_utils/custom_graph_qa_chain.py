@@ -75,8 +75,6 @@ class CustomGraphCypherQAChain(Chain):
     """Whether or not to return the intermediate steps along with the final answer."""
     return_direct: bool = False
     """Whether or not to return the result of querying the graph directly."""
-    cypher_query_corrector: Optional[CypherQueryCorrector] = None
-    """Optional cypher validation tool"""
 
     @property
     def input_keys(self) -> List[str]:
@@ -110,7 +108,6 @@ class CustomGraphCypherQAChain(Chain):
         qa_llm: Optional[BaseLanguageModel] = None,
         exclude_types: List[str] = [],
         include_types: List[str] = [],
-        validate_cypher: bool = False,
         qa_llm_kwargs: Optional[Dict[str, Any]] = None,
         cypher_llm_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
@@ -164,19 +161,10 @@ class CustomGraphCypherQAChain(Chain):
 
         graph_schema = construct_schema(get_graph_view())
 
-        cypher_query_corrector = None
-        if validate_cypher:
-            corrector_schema = [
-                Schema(el["start"], el["type"], el["end"])
-                for el in kwargs["graph"].structured_schema.get("relationships")
-            ]
-            cypher_query_corrector = CypherQueryCorrector(corrector_schema)
-
         return cls(
             graph_schema=graph_schema,
             qa_chain=qa_chain,
             cypher_generation_chain=cypher_generation_chain,
-            cypher_query_corrector=cypher_query_corrector,
             **kwargs,
         )
 
@@ -198,12 +186,6 @@ class CustomGraphCypherQAChain(Chain):
 
         # Extract Cypher code if it is wrapped in backticks
         generated_cypher = extract_cypher(generated_cypher)
-
-        # Correct Cypher query if enabled
-        if self.cypher_query_corrector:
-            generated_cypher = self.cypher_query_corrector(generated_cypher).replace(
-                '"', ""
-            )
 
         _run_manager.on_text("Generated Cypher:", end="\n", verbose=self.verbose)
         _run_manager.on_text(
