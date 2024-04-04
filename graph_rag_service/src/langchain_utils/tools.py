@@ -5,7 +5,6 @@ from src.langchain_utils.llm import llm
 from src.langchain_utils.prompts import cypher_prompt, qa_prompt
 
 
-
 chain = CustomGraphCypherQAChain.from_llm(
     llm=llm,
     verbose=True,
