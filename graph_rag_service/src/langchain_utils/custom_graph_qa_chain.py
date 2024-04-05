@@ -1,4 +1,4 @@
-"""Question answering over a graph."""
+"""Custom question answering over a graph."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ import re
 from typing import Any, Dict, List, Optional
 
 from langchain.chains.base import Chain
-from langchain.chains.graph_qa.cypher_utils import CypherQueryCorrector, Schema
 from langchain.chains.graph_qa.prompts import CYPHER_GENERATION_PROMPT, CYPHER_QA_PROMPT
 from langchain.chains.llm import LLMChain
 from langchain_core.callbacks import CallbackManagerForChainRun
@@ -36,7 +35,7 @@ def extract_cypher(text: str) -> str:
     return matches[0] if matches else text
 
 
-def construct_schema(graph_view) -> str:
+def construct_schema(graph_view: List[Dict[str]]) -> str:
     """Filter the schema based on included or excluded types"""
 
     schema = []
@@ -111,7 +110,7 @@ class CustomGraphCypherQAChain(Chain):
         qa_llm_kwargs: Optional[Dict[str, Any]] = None,
         cypher_llm_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
-    ):
+    ) -> CustomGraphCypherQAChain:
         """Initialize from LLM."""
 
         if not cypher_llm and not llm:
@@ -159,7 +158,8 @@ class CustomGraphCypherQAChain(Chain):
                 "can be provided, but not both"
             )
 
-        graph_schema = construct_schema(get_graph_view())
+        graph_view = get_graph_view()
+        graph_schema = construct_schema(graph_view)
 
         return cls(
             graph_schema=graph_schema,

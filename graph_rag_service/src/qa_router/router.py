@@ -1,5 +1,3 @@
-from typing import Annotated
-
 from fastapi import APIRouter, status
 
 from src.qa_router.schemas import Answer, Input

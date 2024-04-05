@@ -22,5 +22,5 @@ class QueryKBInput(BaseModel):
 async def query_knowledge_base(query: str) -> str:
     """Использовать базу знаний для получения ответа на вопрос пользователя."""
 
-    result = chain(query)
+    result = await chain.ainvoke(query)
     return result
