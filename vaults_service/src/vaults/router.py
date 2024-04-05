@@ -1,13 +1,13 @@
 import asyncio
 import logging
-from typing import List
+from typing import Annotated, List
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, File, UploadFile, status, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 
-from src.repositories.postgres_repository import DocumentRepository, VaultRepository
+from src.database.repositories import DocumentRepository, VaultRepository
 from src.utils.exceptions import UnsupportedFileType
 from src.utils.requests import (
     send_upload_request_to_graph_kb_service,
@@ -31,8 +31,8 @@ vaults_router = APIRouter(tags=["Vaults"])
     "/create_vault", status_code=status.HTTP_201_CREATED, response_model=VaultResponse
 )
 async def create_vault(
-    create_vault_request: CreateVaultRequest = Body(...),
-    files: List[UploadFile] = File(...),
+    create_vault_request: Annotated[CreateVaultRequest, Body(...)],
+    files: Annotated[List[UploadFile], File(...)],
 ):
     logging.info(f"Files received: {[f.filename for f in files]}")
 
@@ -66,9 +66,9 @@ async def create_vault(
 
 @vaults_router.delete("/delete_vault", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vault(
+    vault_id: Annotated[UUID, Body(...)],
+    vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
     background_tasks: BackgroundTasks,
-    vault_id: UUID = Body(...),
-    vault_repository: VaultRepository = Depends(vault_exists),
 ):
     vault_type = await vault_repository.get_vault_type(vault_id)
     await vault_repository.delete(vault_id)
@@ -82,8 +82,8 @@ async def delete_vault(
     response_model=List[DocumentResponse],
 )
 async def get_vault_documents(
-    vault_id: UUID = Body(...),
-    vault_repository: VaultRepository = Depends(vault_exists),
+    vault_id: Annotated[UUID, Body(...)],
+    vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
 ):
     documents = await vault_repository.get_vault_documents(vault_id)
 
@@ -95,7 +95,7 @@ async def get_vault_documents(
     status_code=status.HTTP_200_OK,
     response_model=List[VaultResponse],
 )
-async def get_users_vaults(user_id: UUID = Body(...)):
+async def get_users_vaults(user_id: Annotated[UUID, Body(...)]):
     vault_repository = VaultRepository()
 
     vaults = await vault_repository.get_users_vaults(user_id)

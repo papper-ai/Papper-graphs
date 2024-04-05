@@ -3,8 +3,8 @@ import uuid
 from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 
-from src.repositories.models import Document, Vault
-from src.repositories.postgres_repository import DocumentRepository, VaultRepository
+from src.database.models import Document, Vault
+from src.database.repositories import DocumentRepository, VaultRepository
 from src.utils.readers import read_document
 from src.utils.requests import (
     send_delete_request_to_graph_kb_service,
