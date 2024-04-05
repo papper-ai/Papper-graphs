@@ -1,5 +1,7 @@
 from typing import Annotated
 
+from uuid import UUID
+
 from fastapi import APIRouter, Body, status
 
 from src.kb_router.schemas import DocumentsInput
@@ -9,7 +11,7 @@ kb_router = APIRouter(tags=["Knowledge Base"])
 
 
 @kb_router.post("/upload", status_code=status.HTTP_201_CREATED)
-async def upload(input: DocumentsInput = Body(...)) -> None:
+async def upload(input: Annotated[DocumentsInput, Body(...)]) -> None:
     vault_id = input.vault_id
     documents = input.documents
 
@@ -19,5 +21,5 @@ async def upload(input: DocumentsInput = Body(...)) -> None:
 
 
 @kb_router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
-async def delete(vault_id: Annotated[str, Body()]) -> None:
+async def delete(vault_id: Annotated[UUID, Body()]) -> None:
     await delete_kb(vault_id)

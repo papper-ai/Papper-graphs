@@ -1,6 +1,7 @@
 import logging
 import time
 from typing import List
+from uuid import UUID
 
 from fastapi import HTTPException
 from neo4j.exceptions import ClientError
@@ -33,11 +34,11 @@ async def drop_database(vault_id: str) -> None:
                 logging.error(e)
 
 
-async def execute_cyphers(cyphers: List[str], vault_id: str) -> None:
+async def execute_cyphers(cyphers: List[str], vault_id: UUID) -> None:
     logging.info("Executing cyphers")
     start_time = time.perf_counter()
 
-    async with neo4j_driver.session(database=vault_id) as session:
+    async with neo4j_driver.session(database=str(vault_id)) as session:
         for cypher in cyphers:
             try:
                 await session.run(cypher)

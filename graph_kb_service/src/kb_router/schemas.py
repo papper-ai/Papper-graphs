@@ -1,18 +1,19 @@
 from typing import List
+from uuid import UUID
 
 from pydantic import BaseModel
 
 
 class Document(BaseModel):
-    document_id: str
+    document_id: UUID
     text: str
 
 
 class DocumentsInput(BaseModel):
-    vault_id: str
+    vault_id: UUID
     documents: List[Document]
 
 
 class DocumentRelations(BaseModel):
-    document_id: str
-    relations: list
+    document_id: UUID
+    relations: List
