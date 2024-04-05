@@ -19,7 +19,7 @@ class QueryKBInput(BaseModel):
 
 
 @tool("query-knowledge-base-tool", args_schema=QueryKBInput, return_direct=True)
-def query_knowledge_base(query: str) -> str:
+async def query_knowledge_base(query: str) -> str:
     """Использовать базу знаний для получения ответа на вопрос пользователя."""
 
     result = chain(query)

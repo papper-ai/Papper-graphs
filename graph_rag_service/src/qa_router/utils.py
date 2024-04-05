@@ -7,13 +7,17 @@ from src.qa_router.schemas import Answer, Input
 
 async def generate_answer(input: Input) -> Answer:
     chat_history = construct_langchain_history(input.history)
-    response = agent_executor.invoke(
+    response = await agent_executor.ainvoke(
         {"input": input.query, "chat_history": chat_history}
     )
 
     logging.info(response)
 
-    answer = response["output"]["result"]
+    answer = (
+        response["output"]["result"]
+        if isinstance(response["output"], dict)
+        else response["output"]
+    )
 
     traceback = []
     for i in range(len(response["intermediate_steps"])):
