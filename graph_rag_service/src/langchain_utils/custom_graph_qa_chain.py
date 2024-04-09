@@ -69,6 +69,7 @@ class CustomGraphCypherQAChain(Chain):
     input_key: str = "query"  #: :meta private:
     output_key: str = "result"  #: :meta private:
     top_k: int = 10
+    graph_kb_name: Optional[str] = None
     """Number of results to return from the query"""
     return_intermediate_steps: bool = False
     """Whether or not to return the intermediate steps along with the final answer."""
@@ -101,6 +102,7 @@ class CustomGraphCypherQAChain(Chain):
         cls,
         llm: Optional[BaseLanguageModel] = None,
         *,
+        graph_kb_name: Optional[str] = None,
         qa_prompt: Optional[BasePromptTemplate] = None,
         cypher_prompt: Optional[BasePromptTemplate] = None,
         cypher_llm: Optional[BaseLanguageModel] = None,
@@ -158,11 +160,12 @@ class CustomGraphCypherQAChain(Chain):
                 "can be provided, but not both"
             )
 
-        graph_view = get_graph_view()
+        graph_view = get_graph_view(db_name=graph_kb_name)
         graph_schema = construct_schema(graph_view)
 
         return cls(
             graph_schema=graph_schema,
+            graph_kb_name=graph_kb_name,
             qa_chain=qa_chain,
             cypher_generation_chain=cypher_generation_chain,
             **kwargs,
@@ -201,7 +204,7 @@ class CustomGraphCypherQAChain(Chain):
                         "document_id": record["r"]["document_id"],
                         "information": record["r"]["information"],
                     }
-                    for record in neo4j_driver.execute_query(generated_cypher).records
+                    for record in neo4j_driver.execute_query(query_=generated_cypher, database_=self.graph_kb_name).records
                 ]
                 context = [result["information"] for result in results[: self.top_k]]
             except Exception as e:

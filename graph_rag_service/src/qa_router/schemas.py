@@ -2,8 +2,7 @@ from enum import Enum
 from typing import List
 from uuid import UUID
 
-from fastapi import Body
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 
 class Role(str, Enum):
@@ -17,8 +16,15 @@ class Message(BaseModel):
 
 
 class Input(BaseModel):
+    vault_id: UUID
     query: str = Field(description="User's new message")
     history: List[Message]
+
+    @validator("vault_id")
+    def convert_uuid_to_str(cls, v):
+        if isinstance(v, UUID):
+            return str(v)
+        return v
 
 
 class SearchResult(BaseModel):

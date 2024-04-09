@@ -1,12 +1,14 @@
 import logging
 
-from src.langchain_utils.agent import agent_executor
+from src.langchain_utils.agent import initialize_agent_with_tools
 from src.langchain_utils.history import construct_langchain_history
 from src.qa_router.schemas import Answer, Input
 
 
 async def generate_answer(input: Input) -> Answer:
     chat_history = construct_langchain_history(input.history)
+    agent_executor = initialize_agent_with_tools(input.vault_id)
+
     response = await agent_executor.ainvoke(
         {"input": input.query, "chat_history": chat_history}
     )
