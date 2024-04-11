@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 import re
 from typing import Any, Dict, List, Optional
 
@@ -38,14 +39,23 @@ def extract_cypher(text: str) -> str:
 def construct_schema(graph_view: List[Dict[str]]) -> str:
     """Filter the schema based on included or excluded types"""
 
-    schema = []
-    for triplet in graph_view:
+    relations = []
+    schema = ""
+
+    if len(graph_view) > 100:
+        triplets = random.sample(graph_view, 100)
+        schema += "(!) Showing only 100 random relations from graph. Rerun to get another relations.\n"
+    else:
+        triplets = graph_view
+
+    for triplet in triplets:
         relation = (
             f'({triplet["n.name"]})-[{triplet["relationship"]}]->({triplet["m.name"]})'
         )
-        schema.append(relation)
+        relations.append(relation)
 
-    return ",".join(schema)
+    schema += ",".join(relations)
+    return schema
 
 
 class CustomGraphCypherQAChain(Chain):
@@ -204,7 +214,9 @@ class CustomGraphCypherQAChain(Chain):
                         "document_id": record["r"]["document_id"],
                         "information": record["r"]["information"],
                     }
-                    for record in neo4j_driver.execute_query(query_=generated_cypher, database_=self.graph_kb_name).records
+                    for record in neo4j_driver.execute_query(
+                        query_=generated_cypher, database_=self.graph_kb_name
+                    ).records
                 ]
                 context = [result["information"] for result in results[: self.top_k]]
             except Exception as e:

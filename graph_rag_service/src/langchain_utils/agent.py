@@ -11,8 +11,6 @@ class QueryKBInput(BaseModel):
 
 
 def initialize_agent_with_tools(graph_kb_name: str) -> AgentExecutor:
-    graph_kb_wrapper = graph_kb_name
-
     @tool("query-knowledge-base-tool", args_schema=QueryKBInput, return_direct=True)
     async def query_knowledge_base(query: str) -> str:
         """Использовать базу знаний для получения ответа на вопрос пользователя."""
@@ -20,7 +18,7 @@ def initialize_agent_with_tools(graph_kb_name: str) -> AgentExecutor:
         chain = CustomGraphCypherQAChain.from_llm(
             llm=llm,
             verbose=True,
-            graph_kb_name=graph_kb_wrapper,
+            graph_kb_name=graph_kb_name,
             return_intermediate_steps=True,
             cypher_prompt=cypher_prompt,
             qa_prompt=qa_prompt,
