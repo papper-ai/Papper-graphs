@@ -4,27 +4,24 @@ from typing import Annotated, List
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, UploadFile, status
-from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 
 from src.database.repositories import DocumentRepository, VaultRepository
 from src.utils.exceptions import UnsupportedFileType
-from src.utils.requests import (
-    send_upload_request_to_graph_kb_service,
-    send_upload_request_to_vector_kb_service,
-)
-from src.vaults.dependencies import vault_exists
+from src.vaults.dependencies import document_exists, vault_exists
 from src.vaults.schemas import (
     CreateVaultRequest,
-    Document,
     DocumentResponse,
-    RequestToGraphKBService,
     VaultResponse,
-    VaultType,
 )
-from src.vaults.utils import add_document, add_vault, delete_documents_background
+from src.vaults.utils import (
+    add_document,
+    add_vault,
+    delete_documents_background,
+    upload_documents_to_kb,
+)
 
-vaults_router = APIRouter(tags=["Vaults"])
+vaults_router = APIRouter(tags=["Vaults & Documents"])
 
 
 @vaults_router.post(
@@ -36,29 +33,28 @@ async def create_vault(
 ):
     logging.info(f"Files received: {[f.filename for f in files]}")
 
-    vault = await add_vault(create_vault_request, VaultRepository())
+    vault_repository = VaultRepository()
+    vault = await add_vault(create_vault_request, vault_repository)
 
     try:
         documents = await asyncio.gather(
             *[add_document(file, vault.id, DocumentRepository()) for file in files]
         )
     except UnsupportedFileType as e:
-        await VaultRepository().delete(vault.id)
+        await vault_repository.delete(vault.id)
         raise HTTPException(status_code=406, detail=e.message)
 
-    # Make an upload request to graph KB service
-    upload_request_body = jsonable_encoder(
-        RequestToGraphKBService(
-            vault_id=vault.id,
-            documents=[
-                Document(document_id=doc.id, text=doc.text) for doc in documents
-            ],
+    try:
+        await upload_documents_to_kb(
+            vault_id=vault.id, documents=documents, vault_type=vault.type
         )
-    )
-    if create_vault_request.vault_type == VaultType.GRAPH:
-        await send_upload_request_to_graph_kb_service(upload_request_body)
-    else:
-        await send_upload_request_to_vector_kb_service(upload_request_body)
+    except Exception as e:
+        logging.error(e)
+        await vault_repository.delete(vault.id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error uploading documents to {vault.type} knowledge base",
+        )
 
     # Return the created vault representation
     return VaultResponse.model_validate(vault)
@@ -71,9 +67,6 @@ async def delete_vault(
     background_tasks: BackgroundTasks,
 ):
     vault = await vault_repository.get(vault_id)
-    if vault is None:
-        raise HTTPException(status_code=404, detail="Vault not found")
-
     await vault_repository.delete(vault_id)
 
     background_tasks.add_task(delete_documents_background, vault_id, vault.type)
@@ -111,13 +104,11 @@ async def get_users_vaults(user_id: Annotated[UUID, Body(...)]):
     status_code=status.HTTP_200_OK,
     response_model=VaultResponse,
 )
-async def get_vault_by_id(vault_id: Annotated[UUID, Body(...)]):
-    vault_repository = VaultRepository()
-
+async def get_vault_by_id(
+    vault_id: Annotated[UUID, Body(...)],
+    vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
+):
     vault = await vault_repository.get(vault_id)
-    if not vault:
-        raise HTTPException(status_code=404, detail="Vault not found")
-
     return VaultResponse.model_validate(vault)
 
 
@@ -126,11 +117,9 @@ async def get_vault_by_id(vault_id: Annotated[UUID, Body(...)]):
     status_code=status.HTTP_200_OK,
     response_model=DocumentResponse,
 )
-async def get_document_by_id(document_id: Annotated[UUID, Body(...)]):
-    document_repository = DocumentRepository()
-
+async def get_document_by_id(
+    document_id: Annotated[UUID, Body(...)],
+    document_repository: Annotated[DocumentRepository, Depends(document_exists)],
+):
     document = await document_repository.get(document_id)
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found")
-
     return DocumentResponse.model_validate(document)

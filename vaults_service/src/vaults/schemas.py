@@ -25,14 +25,14 @@ class CreateVaultRequest(BaseModel):
         return value
 
 
-class Document(BaseModel):
+class DocumentText(BaseModel):
     document_id: UUID
     text: str
 
 
-class RequestToGraphKBService(BaseModel):
+class RequestToKBService(BaseModel):
     vault_id: UUID
-    documents: List[Document]
+    documents: List[DocumentText]
 
 
 class VaultResponse(BaseModel):
