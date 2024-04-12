@@ -3,7 +3,8 @@ import math
 
 import torch
 
-from src.model.model import CUDA_IS_AVAILABLE, model, tokenizer
+from src.config import settings
+from src.model.model import model, tokenizer, use_cuda
 
 
 # from https://huggingface.co/Babelscape/rebel-large
@@ -84,7 +85,7 @@ def run_relation_extraction(text: str) -> list:
         for boundary in spans_boundaries
     ]
 
-    if CUDA_IS_AVAILABLE:
+    if use_cuda:
         inputs = {
             "input_ids": torch.stack(tensor_ids).to("cuda"),
             "attention_mask": torch.stack(tensor_masks).to("cuda"),
@@ -105,11 +106,12 @@ def run_relation_extraction(text: str) -> list:
     }
 
     # Generate relations in batches
-    batch_size = 8  # Choose an appropriate batch size that fits in the GPU memory
+    batch_size = settings.batch_size
+
     for batch_start in range(0, len(tensor_ids), batch_size):
         batch_end = min(batch_start + batch_size, len(tensor_ids))
 
-        if CUDA_IS_AVAILABLE:
+        if use_cuda:
             batch_inputs = {
                 "input_ids": torch.stack(tensor_ids[batch_start:batch_end]).to("cuda"),
                 "attention_mask": torch.stack(tensor_masks[batch_start:batch_end]).to(
@@ -135,8 +137,12 @@ def run_relation_extraction(text: str) -> list:
 
         # Process decoded relations
         for i, sentence_pred in enumerate(batch_decoded_preds):
-            current_span_input_ids = batch_inputs["input_ids"][i // num_return_sequences]
-            current_span_text = tokenizer.decode(current_span_input_ids, skip_special_tokens=True)
+            current_span_input_ids = batch_inputs["input_ids"][
+                i // num_return_sequences
+            ]
+            current_span_text = tokenizer.decode(
+                current_span_input_ids, skip_special_tokens=True
+            )
             relations = extract_relations_from_model_output(sentence_pred)
             for relation in relations:
                 relation["meta"] = {
