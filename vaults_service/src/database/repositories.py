@@ -91,13 +91,3 @@ class VaultRepository(AbstractRepository):
                 select(models.Vault).where(models.Vault.user_id == user_id)
             )
             return vaults.scalars().all()
-
-    async def get_vault_type(
-        self, id: UUID
-    ) -> typing.Optional[typing.List[models.Vault]]:
-        async with self.session as session:
-            result = await session.execute(
-                select(models.Vault.type).where(models.Vault.id == id)
-            )
-            vault_type = result.scalar()
-            return vault_type

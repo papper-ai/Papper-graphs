@@ -70,10 +70,13 @@ async def delete_vault(
     vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
     background_tasks: BackgroundTasks,
 ):
-    vault_type = await vault_repository.get_vault_type(vault_id)
+    vault = await vault_repository.get(vault_id)
+    if vault is None:
+        raise HTTPException(status_code=404, detail="Vault not found")
+
     await vault_repository.delete(vault_id)
 
-    background_tasks.add_task(delete_documents_background, vault_id, vault_type)
+    background_tasks.add_task(delete_documents_background, vault_id, vault.type)
 
 
 @vaults_router.post(
@@ -101,3 +104,33 @@ async def get_users_vaults(user_id: Annotated[UUID, Body(...)]):
     vaults = await vault_repository.get_users_vaults(user_id)
 
     return [VaultResponse.model_validate(vault) for vault in vaults]
+
+
+@vaults_router.post(
+    "/get_vault_by_id",
+    status_code=status.HTTP_200_OK,
+    response_model=VaultResponse,
+)
+async def get_vault_by_id(vault_id: Annotated[UUID, Body(...)]):
+    vault_repository = VaultRepository()
+
+    vault = await vault_repository.get(vault_id)
+    if not vault:
+        raise HTTPException(status_code=404, detail="Vault not found")
+
+    return VaultResponse.model_validate(vault)
+
+
+@vaults_router.post(
+    "/get_document_by_id",
+    status_code=status.HTTP_200_OK,
+    response_model=DocumentResponse,
+)
+async def get_document_by_id(document_id: Annotated[UUID, Body(...)]):
+    document_repository = DocumentRepository()
+
+    document = await document_repository.get(document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    return DocumentResponse.model_validate(document)
