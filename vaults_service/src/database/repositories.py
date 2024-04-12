@@ -61,9 +61,9 @@ class VaultRepository(AbstractRepository):
     async def delete(self, id: UUID) -> None:
         async with self.session as session:
             async with session.begin():
-                entity = await session.get(models.Vault, id)
+                vault = await session.get(models.Vault, id)
 
-                if entity:
+                if vault:
                     # Query and delete all documents associated with the vault
                     documents = await session.execute(
                         select(models.Document).where(models.Document.vault_id == id)
@@ -71,7 +71,14 @@ class VaultRepository(AbstractRepository):
                     for document in documents.scalars().all():
                         await session.delete(document)
 
-                    await session.delete(entity)
+                    await session.delete(vault)
+
+    async def rename(self, id: UUID, name: str) -> None:
+        async with self.session as session:
+            async with session.begin():
+                vault = await session.get(models.Vault, id)
+                if vault:
+                    vault.name = name
 
     async def get_vault_documents(
         self, id: UUID

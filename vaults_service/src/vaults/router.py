@@ -72,6 +72,15 @@ async def delete_vault(
     background_tasks.add_task(delete_documents_background, vault_id, vault.type)
 
 
+@vaults_router.put("/rename_vault", status_code=status.HTTP_200_OK)
+async def rename_vault(
+    vault_id: Annotated[UUID, Body(...)],
+    name: Annotated[str, Body(...)],
+    vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
+):
+    await vault_repository.rename(id=vault_id, name=name)
+
+
 @vaults_router.post(
     "/get_vault_documents",
     status_code=status.HTTP_200_OK,

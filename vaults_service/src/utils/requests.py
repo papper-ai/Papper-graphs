@@ -1,10 +1,10 @@
 import aiohttp
 
-from src.vaults.schemas import RequestToGraphKBService
+from src.vaults.schemas import RequestToKBService
 
 
 async def send_upload_request_to_graph_kb_service(
-    body: RequestToGraphKBService,
+    body: RequestToKBService,
 ) -> dict:
     async with aiohttp.ClientSession() as session:
         async with session.post(
@@ -26,6 +26,6 @@ async def send_delete_request_to_vector_kb_service(body: str) -> dict:
 
 
 async def send_upload_request_to_vector_kb_service(
-    body: RequestToGraphKBService,
+    body: RequestToKBService,
 ) -> dict:
     raise NotImplementedError()

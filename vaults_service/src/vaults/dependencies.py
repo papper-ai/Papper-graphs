@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import Body
 from fastapi.exceptions import HTTPException
 
-from src.database.repositories import VaultRepository, DocumentRepository
+from src.database.repositories import DocumentRepository, VaultRepository
 
 
 async def vault_exists(vault_id: UUID = Body(...)) -> VaultRepository:
