@@ -19,7 +19,6 @@ services:
       - ./graph_kb_service/.env
     depends_on:
       - neo4j
-      - relation_extraction_model
     ports:
       - 7777:8000
     command: >
