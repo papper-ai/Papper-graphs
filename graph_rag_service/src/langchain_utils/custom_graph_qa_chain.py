@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 from typing import Any, Dict, List, Optional
@@ -12,6 +13,7 @@ from langchain.chains.llm import LLMChain
 from langchain_core.callbacks import CallbackManagerForChainRun
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts import BasePromptTemplate
+
 from src.database.neo4j import neo4j_driver
 from src.database.queries import get_graph_view
 
@@ -198,7 +200,7 @@ class CustomGraphCypherQAChain(Chain):
         )
 
         # Extract Cypher code if it is wrapped in backticks
-        generated_cypher = extract_cypher(generated_cypher)
+        generated_cypher = extract_cypher(generated_cypher).lower()
 
         _run_manager.on_text("Generated Cypher:", end="\n", verbose=self.verbose)
         _run_manager.on_text(
@@ -220,7 +222,7 @@ class CustomGraphCypherQAChain(Chain):
                 ]
                 context = [result["information"] for result in results[: self.top_k]]
             except Exception as e:
-                print(e.code)
+                logging.error(e)
                 results = []
                 context = []
         else:

@@ -55,8 +55,7 @@ async def request_relation_extraction(
         )
 
     logging.info(
-        f"Extracted {len(relations)} relations from {len(documents)} documents in {time.perf_counter() - start_time:.4f} seconds"
+        f"Extracted relations from {len(documents)} documents in {time.perf_counter() - start_time:.4f} seconds"
     )
-    logging.info(relations)
     
     return relations
