@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return f"{self.db_dialect}+{self.db_async_driver}://{self.db_user}:{self.db_password}@{self.db_host}:5455/{self.db_name}"
+        return f"{self.db_dialect}+{self.db_async_driver}://{self.db_user}:{self.db_password}@{self.db_host}:5432/{self.db_name}"
 
     class Config:
         extra = "ignore"
