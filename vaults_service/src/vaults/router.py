@@ -39,13 +39,15 @@ async def create_vault(
     vault_repository = VaultRepository()
     vault = await add_vault(create_vault_request, vault_repository)
 
-    try:
-        documents = await asyncio.gather(
-            *[add_document(file, vault.id, DocumentRepository()) for file in files]
-        )
-    except UnsupportedFileType as e:
-        await vault_repository.delete(vault.id)
-        raise HTTPException(status_code=406, detail=e.message)
+    documents = await asyncio.gather(
+        *[add_document(file, vault.id, DocumentRepository()) for file in files],
+        return_exceptions=True
+    )
+    # On any UnsupportedFileType, delete the entire vault and raise an HTTPException
+    for result in documents:
+        if isinstance(result, UnsupportedFileType):
+            await vault_repository.delete(vault.id)
+            raise HTTPException(status_code=406, detail=result.message)
 
     try:
         await upload_documents_to_kb(
