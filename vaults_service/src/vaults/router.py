@@ -30,7 +30,10 @@ vaults_router = APIRouter(tags=["Vaults & Documents"])
 async def create_vault(
     create_vault_request: Annotated[CreateVaultRequest, Body(...)],
     files: Annotated[List[UploadFile], File(...)],
-):
+):  
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
+    
     logging.info(f"Files received: {[f.filename for f in files]}")
 
     vault_repository = VaultRepository()
