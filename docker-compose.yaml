@@ -11,8 +11,6 @@ services:
     ports:
       - 7474:7474
       - 7687:7687
-    networks:
-      - papper_network
   graph_kb_service:
     build: graph_kb_service
     volumes:
@@ -25,8 +23,6 @@ services:
       - 7777:8000
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_kb_service/uvicorn_logging.conf"
-    networks:
-      - papper_network
   graph_rag_service:
     build: graph_rag_service
     volumes:
@@ -39,8 +35,6 @@ services:
       - 7780:8000
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_rag_service/uvicorn_logging.conf"
-    networks:
-      - papper_network
   vaults_service_postgres:
     image: postgres:16.1-bullseye
     volumes:
@@ -51,8 +45,6 @@ services:
       - POSTGRES_PASSWORD=${VAULTS_SERVICE_POSTGRES_DB_PASSWORD}
     ports:
       - ${VAULTS_SERVICE_POSTGRES_DB_CONTAINER_PORT}:5432
-    networks:
-      - papper_network
   vaults_service:
     build: vaults_service
     volumes:
@@ -67,12 +59,7 @@ services:
     command: >
       sh -c "alembic upgrade head && 
       uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/vaults_service/uvicorn_logging.conf"
-    networks:
-      - papper_network
 
 volumes:
   graph_data:
   vaults_service_postgres_data:
-
-networks:
-  papper_network:
