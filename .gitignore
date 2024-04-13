@@ -168,3 +168,5 @@ rut5_REBEL_base/
 
 # Test files
 .py
+
+/.idea/**
