@@ -1,5 +1,6 @@
 from typing import Annotated
-from fastapi import FastAPI, Body, status
+
+from fastapi import Body, FastAPI, status
 from fastapi.responses import JSONResponse
 
 from src.utils.relation_extraction import run_relation_extraction
