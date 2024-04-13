@@ -36,14 +36,7 @@ services:
       - 7780:8000
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_rag_service/uvicorn_logging.conf"
-  relation_extraction_model:
-    build: relation_extraction_model
-    volumes:
-      - ./relation_extraction_model:/usr/src/relation_extraction_model
-    ports:
-      - 7776:8000
-    command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/relation_extraction_model/uvicorn_logging.conf"
+
   vaults_service_postgres:
     image: postgres:16.1-bullseye
     volumes:
