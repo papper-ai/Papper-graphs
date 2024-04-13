@@ -48,14 +48,15 @@ async def request_relation_extraction(
         responses = await asyncio.gather(*tasks)
 
     relations = []
-
+    
     for document, response in zip(documents, responses):
         relations.append(
             DocumentRelations(document_id=document.document_id, relations=response)
         )
 
     logging.info(
-        f"Extracted relations from {len(documents)} documents in {time.perf_counter() - start_time:.4f} seconds"
+        f"Extracted {len(relations)} relations from {len(documents)} documents in {time.perf_counter() - start_time:.4f} seconds"
     )
-
+    logging.info(relations)
+    
     return relations
