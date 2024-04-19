@@ -185,8 +185,10 @@ class CustomGraphCypherQAChain(Chain):
 
     def _call(
         self,
-    ):
-        pass
+        inputs: Dict[str, Any],
+        run_manager: Optional[CallbackManagerForChainRun] = None,
+    ) -> Dict[str, Any]:
+        raise NotImplementedError()
 
     async def _acall(
         self,
