@@ -51,8 +51,6 @@ services:
       - POSTGRES_DB=${VAULTS_SERVICE_POSTGRES_DB_NAME}
       - POSTGRES_USER=${VAULTS_SERVICE_POSTGRES_DB_USER}
       - POSTGRES_PASSWORD=${VAULTS_SERVICE_POSTGRES_DB_PASSWORD}
-    networks:
-      - document_service_network
     ports:
       - 8280:5432
     networks:
@@ -69,14 +67,11 @@ services:
       - vaults_service_postgres
       - graph_kb_service
     networks:
-      - document_service_network
+      - vaults_services_network
       - papper-backend
     command: >
       sh -c "alembic upgrade head && 
       uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/vaults_service/uvicorn_logging.conf"
-    networks:
-      - vaults_services_network
-      - papper-backend
 
 volumes:
   graph_data:
