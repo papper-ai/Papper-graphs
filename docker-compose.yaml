@@ -9,8 +9,8 @@ services:
       - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
     ports:
-      - 7474:7474
-      - 7687:7687
+      - 8290:7474
+      - 8291:7687
     networks:
       - vaults_services_network
   graph_kb_service:
@@ -22,7 +22,7 @@ services:
     depends_on:
       - neo4j
     ports:
-      - 7777:8000
+      - 8210:8000
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_kb_service/uvicorn_logging.conf"
     networks:
@@ -36,9 +36,7 @@ services:
     depends_on:
       - neo4j
     ports:
-      - 7780:8000
-    networks:
-      - document_service_network
+      - 8500:8000
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_rag_service/uvicorn_logging.conf"
     networks:
@@ -53,10 +51,8 @@ services:
       - POSTGRES_DB=${VAULTS_SERVICE_POSTGRES_DB_NAME}
       - POSTGRES_USER=${VAULTS_SERVICE_POSTGRES_DB_USER}
       - POSTGRES_PASSWORD=${VAULTS_SERVICE_POSTGRES_DB_PASSWORD}
-    networks:
-      - document_service_network
     ports:
-      - ${VAULTS_SERVICE_POSTGRES_DB_CONTAINER_PORT}:5432
+      - 8280:5432
     networks:
       - vaults_services_network
   vaults_service:
@@ -71,14 +67,11 @@ services:
       - vaults_service_postgres
       - graph_kb_service
     networks:
-      - document_service_network
+      - vaults_services_network
       - papper-backend
     command: >
       sh -c "alembic upgrade head && 
       uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/vaults_service/uvicorn_logging.conf"
-    networks:
-      - vaults_services_network
-      - papper-backend
 
 volumes:
   graph_data:
