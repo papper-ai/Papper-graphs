@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Body
@@ -6,7 +7,7 @@ from fastapi.exceptions import HTTPException
 from src.database.repositories import DocumentRepository, VaultRepository
 
 
-async def vault_exists(vault_id: UUID = Body(...)) -> VaultRepository:
+async def vault_exists(vault_id: Annotated[UUID, Body()]) -> VaultRepository:
     vault_repository = VaultRepository()
 
     vault = await vault_repository.get(vault_id)
@@ -16,7 +17,7 @@ async def vault_exists(vault_id: UUID = Body(...)) -> VaultRepository:
     return vault_repository
 
 
-async def document_exists(document_id: UUID = Body(...)) -> DocumentRepository:
+async def document_exists(document_id: Annotated[UUID, Body()]) -> DocumentRepository:
     document_repository = DocumentRepository()
 
     document = await document_repository.get(document_id)
