@@ -10,10 +10,10 @@ logging.basicConfig(
 
 class Settings(BaseSettings):
     batch_size: int = 8
-    use_cuda: bool = True
 
     class Config:
         extra = "ignore"
 
 
 settings = Settings()
+logging.info(f"Using batch size of {settings.batch_size}")

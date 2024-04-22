@@ -4,7 +4,7 @@ import math
 import torch
 
 from src.config import settings
-from src.model.model import model, tokenizer, use_cuda
+from src.model.model import model, tokenizer
 
 
 # from https://huggingface.co/Babelscape/rebel-large
@@ -68,6 +68,7 @@ def run_relation_extraction(text: str) -> list:
     start = 0
 
     logging.info(f"Started running relation extraction on {num_tokens} token text")
+    relations = []
 
     for i in range(num_spans):
         spans_boundaries.append(
@@ -85,23 +86,17 @@ def run_relation_extraction(text: str) -> list:
         for boundary in spans_boundaries
     ]
 
-    if use_cuda:
-        inputs = {
-            "input_ids": torch.stack(tensor_ids).to("cuda"),
-            "attention_mask": torch.stack(tensor_masks).to("cuda"),
-        }
-    else:
-        inputs = {
-            "input_ids": torch.stack(tensor_ids),
-            "attention_mask": torch.stack(tensor_masks),
-        }
+    inputs = {
+        "input_ids": torch.stack(tensor_ids).to("cuda"),
+        "attention_mask": torch.stack(tensor_masks).to("cuda"),
+    }
 
     # Generate relations
-    num_return_sequences = 5
+    num_return_sequences = 10
     gen_kwargs = {
         "max_length": span_length,
         "length_penalty": 0,
-        "num_beams": 5,
+        "num_beams": 10,
         "num_return_sequences": num_return_sequences,
     }
 
@@ -111,18 +106,12 @@ def run_relation_extraction(text: str) -> list:
     for batch_start in range(0, len(tensor_ids), batch_size):
         batch_end = min(batch_start + batch_size, len(tensor_ids))
 
-        if use_cuda:
-            batch_inputs = {
-                "input_ids": torch.stack(tensor_ids[batch_start:batch_end]).to("cuda"),
-                "attention_mask": torch.stack(tensor_masks[batch_start:batch_end]).to(
-                    "cuda"
-                ),
-            }
-        else:
-            batch_inputs = {
-                "input_ids": torch.stack(tensor_ids[batch_start:batch_end]),
-                "attention_mask": torch.stack(tensor_masks[batch_start:batch_end]),
-            }
+        batch_inputs = {
+            "input_ids": torch.stack(tensor_ids[batch_start:batch_end]).to("cuda"),
+            "attention_mask": torch.stack(tensor_masks[batch_start:batch_end]).to(
+                "cuda"
+            ),
+        }
 
         with torch.no_grad():
             batch_generated_tokens = model.generate(
@@ -143,12 +132,16 @@ def run_relation_extraction(text: str) -> list:
             current_span_text = tokenizer.decode(
                 current_span_input_ids, skip_special_tokens=True
             )
-            relations = extract_relations_from_model_output(sentence_pred)
-            for relation in relations:
+            current_relations = extract_relations_from_model_output(sentence_pred)
+            for relation in current_relations:
                 relation["meta"] = {
                     "information": current_span_text  # Here we use the actual text of the span
                 }
 
-    logging.info(f"Finished running relation extraction on {num_tokens} token text")
+            relations.extend(current_relations)
+
+    logging.info(
+        f"Finished running relation extraction on {num_tokens} token text. Extracted {len(relations)} relations"
+    )
 
     return relations

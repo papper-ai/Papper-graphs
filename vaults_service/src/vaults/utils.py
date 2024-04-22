@@ -13,7 +13,13 @@ from src.utils.requests import (
     send_upload_request_to_graph_kb_service,
     send_upload_request_to_vector_kb_service,
 )
-from src.vaults.schemas import CreateVaultRequest, RequestToKBService, VaultType, DocumentText
+from src.vaults.schemas import (
+    CreateRequestToKBService,
+    CreateVaultRequest,
+    DeleteRequestToKBService,
+    DocumentText,
+    VaultType,
+)
 
 
 async def add_vault(
@@ -55,10 +61,12 @@ async def add_document(
 async def delete_documents_background(
     vault_id: uuid.UUID, vault_type: VaultType
 ) -> None:
+    delete_request_body = jsonable_encoder(DeleteRequestToKBService(vault_id=vault_id))
+
     if vault_type == VaultType.GRAPH:
-        await send_delete_request_to_graph_kb_service(body=jsonable_encoder(vault_id))
+        await send_delete_request_to_graph_kb_service(body=delete_request_body)
     else:
-        await send_delete_request_to_vector_kb_service(body=jsonable_encoder(vault_id))
+        await send_delete_request_to_vector_kb_service(body=delete_request_body)
 
 
 async def upload_documents_to_kb(
@@ -66,7 +74,7 @@ async def upload_documents_to_kb(
 ) -> None:
     # Make an upload request to graph KB service
     upload_request_body = jsonable_encoder(
-        RequestToKBService(
+        CreateRequestToKBService(
             vault_id=vault_id,
             documents=[
                 DocumentText(document_id=doc.id, text=doc.text) for doc in documents

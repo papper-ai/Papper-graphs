@@ -21,5 +21,5 @@ async def upload(input: Annotated[DocumentsInput, Body(...)]) -> None:
 
 
 @kb_router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
-async def delete(vault_id: Annotated[UUID, Body()]) -> None:
+async def delete(vault_id: Annotated[UUID, Body(embed=True)]) -> None:
     await delete_kb(vault_id)

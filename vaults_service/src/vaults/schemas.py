@@ -30,9 +30,13 @@ class DocumentText(BaseModel):
     text: str
 
 
-class RequestToKBService(BaseModel):
+class CreateRequestToKBService(BaseModel):
     vault_id: UUID
     documents: List[DocumentText]
+
+
+class DeleteRequestToKBService(BaseModel):
+    vault_id: UUID
 
 
 class VaultResponse(BaseModel):

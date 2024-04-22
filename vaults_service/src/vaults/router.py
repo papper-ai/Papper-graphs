@@ -28,21 +28,26 @@ vaults_router = APIRouter(tags=["Vaults & Documents"])
     "/create_vault", status_code=status.HTTP_201_CREATED, response_model=VaultResponse
 )
 async def create_vault(
-    create_vault_request: Annotated[CreateVaultRequest, Body(...)],
+    create_vault_request: Annotated[CreateVaultRequest, Body()],
     files: Annotated[List[UploadFile], File(...)],
-):
+):  
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
+    
     logging.info(f"Files received: {[f.filename for f in files]}")
 
     vault_repository = VaultRepository()
     vault = await add_vault(create_vault_request, vault_repository)
 
-    try:
-        documents = await asyncio.gather(
-            *[add_document(file, vault.id, DocumentRepository()) for file in files]
-        )
-    except UnsupportedFileType as e:
-        await vault_repository.delete(vault.id)
-        raise HTTPException(status_code=406, detail=e.message)
+    documents = await asyncio.gather(
+        *[add_document(file, vault.id, DocumentRepository()) for file in files],
+        return_exceptions=True
+    )
+    # On any UnsupportedFileType, delete the entire vault and raise an HTTPException
+    for result in documents:
+        if isinstance(result, UnsupportedFileType):
+            await vault_repository.delete(vault.id)
+            raise HTTPException(status_code=406, detail=result.message)
 
     try:
         await upload_documents_to_kb(
@@ -62,7 +67,7 @@ async def create_vault(
 
 @vaults_router.delete("/delete_vault", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vault(
-    vault_id: Annotated[UUID, Body(...)],
+    vault_id: Annotated[UUID, Body(embed=True)],
     vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
     background_tasks: BackgroundTasks,
 ):
@@ -72,10 +77,10 @@ async def delete_vault(
     background_tasks.add_task(delete_documents_background, vault_id, vault.type)
 
 
-@vaults_router.put("/rename_vault", status_code=status.HTTP_200_OK)
+@vaults_router.patch("/rename_vault", status_code=status.HTTP_200_OK)
 async def rename_vault(
-    vault_id: Annotated[UUID, Body(...)],
-    name: Annotated[str, Body(...)],
+    vault_id: Annotated[UUID, Body()],
+    name: Annotated[str, Body()],
     vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
 ):
     await vault_repository.rename(id=vault_id, name=name)
@@ -87,7 +92,7 @@ async def rename_vault(
     response_model=List[DocumentResponse],
 )
 async def get_vault_documents(
-    vault_id: Annotated[UUID, Body(...)],
+    vault_id: Annotated[UUID, Body(embed=True)],
     vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
 ):
     documents = await vault_repository.get_vault_documents(vault_id)
@@ -100,7 +105,7 @@ async def get_vault_documents(
     status_code=status.HTTP_200_OK,
     response_model=List[VaultResponse],
 )
-async def get_users_vaults(user_id: Annotated[UUID, Body(...)]):
+async def get_users_vaults(user_id: Annotated[UUID, Body(embed=True)]):
     vault_repository = VaultRepository()
 
     vaults = await vault_repository.get_users_vaults(user_id)
@@ -114,7 +119,7 @@ async def get_users_vaults(user_id: Annotated[UUID, Body(...)]):
     response_model=VaultResponse,
 )
 async def get_vault_by_id(
-    vault_id: Annotated[UUID, Body(...)],
+    vault_id: Annotated[UUID, Body(embed=True)],
     vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
 ):
     vault = await vault_repository.get(vault_id)
@@ -127,7 +132,7 @@ async def get_vault_by_id(
     response_model=DocumentResponse,
 )
 async def get_document_by_id(
-    document_id: Annotated[UUID, Body(...)],
+    document_id: Annotated[UUID, Body(embed=True)],
     document_repository: Annotated[DocumentRepository, Depends(document_exists)],
 ):
     document = await document_repository.get(document_id)

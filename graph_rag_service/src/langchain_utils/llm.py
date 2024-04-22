@@ -22,7 +22,7 @@ class С4aiLLM(BaseLLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        pass
+        raise NotImplementedError()
 
     async def _agenerate(
         self,

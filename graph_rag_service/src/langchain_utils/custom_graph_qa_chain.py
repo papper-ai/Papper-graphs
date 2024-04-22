@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import re
 from typing import Any, Dict, List, Optional
@@ -12,13 +13,14 @@ from langchain.chains.llm import LLMChain
 from langchain_core.callbacks import CallbackManagerForChainRun
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts import BasePromptTemplate
-from src.database.neo4j import neo4j_driver
+
+from src.database.neo4j import neo4j_async_driver
 from src.database.queries import get_graph_view
 
 INTERMEDIATE_STEPS_KEY = "intermediate_steps"
 
 
-def extract_cypher(text: str) -> str:
+async def extract_cypher(text: str) -> str:
     """Extract Cypher code from a text.
 
     Args:
@@ -186,6 +188,13 @@ class CustomGraphCypherQAChain(Chain):
         inputs: Dict[str, Any],
         run_manager: Optional[CallbackManagerForChainRun] = None,
     ) -> Dict[str, Any]:
+        raise NotImplementedError()
+
+    async def _acall(
+        self,
+        inputs: Dict[str, Any],
+        run_manager: Optional[CallbackManagerForChainRun] = None,
+    ) -> Dict[str, Any]:
         """Generate Cypher statement, use it to look up in db and answer question."""
         _run_manager = run_manager or CallbackManagerForChainRun.get_noop_manager()
         callbacks = _run_manager.get_child()
@@ -198,10 +207,10 @@ class CustomGraphCypherQAChain(Chain):
         )
 
         # Extract Cypher code if it is wrapped in backticks
-        generated_cypher = extract_cypher(generated_cypher)
+        generated_cypher = (await extract_cypher(generated_cypher)).lower()
 
-        _run_manager.on_text("Generated Cypher:", end="\n", verbose=self.verbose)
-        _run_manager.on_text(
+        await _run_manager.on_text("Generated Cypher:", end="\n", verbose=self.verbose)
+        await _run_manager.on_text(
             generated_cypher, color="green", end="\n", verbose=self.verbose
         )
 
@@ -214,13 +223,13 @@ class CustomGraphCypherQAChain(Chain):
                         "document_id": record["r"]["document_id"],
                         "information": record["r"]["information"],
                     }
-                    for record in neo4j_driver.execute_query(
+                    for record in (await neo4j_async_driver.execute_query(
                         query_=generated_cypher, database_=self.graph_kb_name
-                    ).records
+                    )).records
                 ]
                 context = [result["information"] for result in results[: self.top_k]]
             except Exception as e:
-                print(e.code)
+                logging.error(e)
                 results = []
                 context = []
         else:
@@ -230,8 +239,8 @@ class CustomGraphCypherQAChain(Chain):
         if self.return_direct:
             final_result = context
         else:
-            _run_manager.on_text("Full Context:", end="\n", verbose=self.verbose)
-            _run_manager.on_text(
+            await _run_manager.on_text("Full Context:", end="\n", verbose=self.verbose)
+            await _run_manager.on_text(
                 str(context), color="green", end="\n", verbose=self.verbose
             )
 

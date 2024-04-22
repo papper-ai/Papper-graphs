@@ -8,9 +8,11 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+    ports:
+      - 7474:7474
+      - 7687:7687
     networks:
-      - document_service_network
-
+      - vaults_services_network
   graph_kb_service:
     build: graph_kb_service
     volumes:
@@ -19,11 +21,12 @@ services:
       - ./graph_kb_service/.env
     depends_on:
       - neo4j
-    networks:
-      - document_service_network
+    ports:
+      - 7777:8000
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 7777 --reload --log-config /usr/src/graph_kb_service/uvicorn_logging.conf"
-
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_kb_service/uvicorn_logging.conf"
+    networks:
+      - vaults_services_network
   graph_rag_service:
     build: graph_rag_service
     volumes:
@@ -32,11 +35,16 @@ services:
       - ./graph_rag_service/.env
     depends_on:
       - neo4j
+    ports:
+      - 7780:8000
     networks:
       - document_service_network
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 7780 --reload --log-config /usr/src/graph_rag_service/uvicorn_logging.conf"
-
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/graph_rag_service/uvicorn_logging.conf"
+    networks:
+      - graph_rag_service_network
+      - vaults_services_network
+      - papper-backend
   vaults_service_postgres:
     image: postgres:16.1-bullseye
     volumes:
@@ -49,7 +57,8 @@ services:
       - document_service_network
     ports:
       - ${VAULTS_SERVICE_POSTGRES_DB_CONTAINER_PORT}:5432
-
+    networks:
+      - vaults_services_network
   vaults_service:
     build: vaults_service
     volumes:
@@ -57,7 +66,7 @@ services:
     env_file:
       - ./vaults_service/.env
     ports:
-      - 7778:8200
+      - 8200:8000
     depends_on:
       - vaults_service_postgres
       - graph_kb_service
@@ -66,15 +75,20 @@ services:
       - papper-backend
     command: >
       sh -c "alembic upgrade head && 
-      uvicorn main:app --host 0.0.0.0 --port 8200 --reload --log-config /usr/src/vaults_service/uvicorn_logging.conf"
+      uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-config /usr/src/vaults_service/uvicorn_logging.conf"
+    networks:
+      - vaults_services_network
+      - papper-backend
 
 volumes:
   graph_data:
   vaults_service_postgres_data:
 
 networks:
-  document_service_network:
-    name: document_service_network
+  vaults_services_network:
+    name: vaults_services_network
+  graph_rag_service_network:
+    name: graph_rag_service_network
   papper-backend:
     name: papper-backend
     external: true
