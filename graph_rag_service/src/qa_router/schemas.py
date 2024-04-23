@@ -16,7 +16,7 @@ class Message(BaseModel):
 
 
 class Input(BaseModel):
-    vault_id: UUID
+    vault_id: UUID = Field(default=UUID("e740497c-7ad6-4d23-b243-e9fa2602691c"))
     query: str = Field(description="User's new message")
     history: List[Message]
 

@@ -3,10 +3,14 @@ import logging
 from typing import Any, List, Mapping, Optional
 
 import aiohttp
+import httpx
+import langchain
 import requests
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM, BaseLLM
+from langchain_community.llms.llamacpp import LlamaCpp
 from langchain_community.llms.gigachat import GigaChat
+from langchain_openai import ChatOpenAI
 
 '''
 class С4aiLLM(BaseLLM):
@@ -62,4 +66,12 @@ class С4aiLLM(BaseLLM):
         return {"llm_url": self.llm_url}
 
 llm = С4aiLLM()'''
-llm = GigaChat(verify_ssl_certs=False)
+
+llm = GigaChat()
+
+langchain.debug = True
+llm = ChatOpenAI(
+    base_url="http://host.docker.internal:8001/v1/",
+    api_key="sk-no-key-required",
+    verbose=True,
+)

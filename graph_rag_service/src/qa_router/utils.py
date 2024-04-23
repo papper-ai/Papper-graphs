@@ -9,7 +9,7 @@ from neo4j.exceptions import Neo4jError
 
 async def generate_answer(input: Input) -> Answer:
     chat_history = construct_langchain_history(input.history)
-    agent_executor = initialize_agent_with_tools(input.vault_id)
+    agent_executor = initialize_agent_with_tools(graph_kb_name=input.vault_id)
 
     try:
         response = await agent_executor.ainvoke(
