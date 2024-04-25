@@ -30,8 +30,11 @@ async def generate_answer(input: Input) -> Answer:
 
     traceback = []
     for i in range(len(response["intermediate_steps"])):
-        traceback.extend(
-            response["intermediate_steps"][i][1]["intermediate_steps"][0]["results"]
-        )
-
+        try:        
+            traceback.extend(
+                response["intermediate_steps"][i][1]["intermediate_steps"][0]["results"]
+            )
+        except Exception as e:
+            logging.error(e)
+            
     return Answer(answer=answer, traceback=traceback)
