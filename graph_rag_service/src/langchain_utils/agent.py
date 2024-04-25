@@ -2,7 +2,7 @@ from langchain.agents import AgentExecutor, create_structured_chat_agent
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain.tools import tool
 from src.langchain_utils.custom_graph_qa_chain import CustomGraphCypherQAChain
-from src.langchain_utils.llm import llm
+from src.langchain_utils.llm import gigachat_llm, custom_llm
 from src.langchain_utils.prompts import cypher_prompt, qa_prompt, ru_prompt
 
 
@@ -16,7 +16,7 @@ def initialize_agent_with_tools(graph_kb_name: str) -> AgentExecutor:
         """Использовать базу знаний для поиска информации по вопросу Human."""
 
         chain = CustomGraphCypherQAChain.from_llm(
-            llm=llm,
+            llm=gigachat_llm,
             verbose=True,
             graph_kb_name=graph_kb_name,
             return_intermediate_steps=True,
@@ -29,7 +29,7 @@ def initialize_agent_with_tools(graph_kb_name: str) -> AgentExecutor:
         return result
 
     agent = create_structured_chat_agent(
-        llm=llm, tools=[query_knowledge_base], prompt=ru_prompt
+        llm=custom_llm, tools=[query_knowledge_base], prompt=ru_prompt
     )
 
     agent_executor = AgentExecutor(

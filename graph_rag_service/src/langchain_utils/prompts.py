@@ -73,7 +73,7 @@ qa_prompt = PromptTemplate(
 )
 
 
-RU_PROMPT_TEMPLATE = """Ты интеллектуальный помощник по имени Papper. Ты должен ответить на мой вопрос максимально полезно и точно. У тебя есть доступ к инструменту, который называется "query-knowledge-base-tool":
+RU_PROMPT_TEMPLATE = """Ты должен ответить на вопрос Human максимально полезно и точно. У тебя есть доступ к инструменту, который называется "query-knowledge-base-tool":
 {tools}
 
 Больше никаких инструментов нет. Вызывай этот инструмент, чтобы найти ответ по базе знаний. Если по базе знаний ничего не нашлось, попробуй еще, а потом ответь самостоятельно.
@@ -116,4 +116,6 @@ Action:
     0
 ].prompt.template = RU_PROMPT_TEMPLATE
 
-#ru_prompt = hub.pull("hwchase17/structured-chat-agent")
+# ru_prompt = hub.pull("hwchase17/structured-chat-agent")
+
+SYSTEM_PROMPT = """Ты - интеллектуальный помощник по имени Papper, который отвечает на вопросы по документам пользователя."""
