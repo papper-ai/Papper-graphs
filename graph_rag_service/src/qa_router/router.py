@@ -8,5 +8,4 @@ qa_router = APIRouter(tags=["QA"])
 
 @qa_router.post("/answer", status_code=status.HTTP_200_OK, response_model=Answer)
 async def answer(input: Input):
-    answer = await generate_answer(input)
-    return answer
+    return await generate_answer(input)

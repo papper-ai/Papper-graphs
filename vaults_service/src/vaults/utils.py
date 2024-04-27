@@ -1,23 +1,37 @@
+import asyncio
+import logging
 import uuid
 from typing import List
+from uuid import UUID
 
-from fastapi import UploadFile
+from fastapi import BackgroundTasks, UploadFile
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import HTTPException
 
 from src.database.models import Document, Vault
 from src.database.repositories import DocumentRepository, VaultRepository
+from src.utils.exceptions import UnsupportedFileType
 from src.utils.readers import read_document
 from src.utils.requests import (
-    send_delete_request_to_graph_kb_service,
-    send_delete_request_to_vector_kb_service,
-    send_upload_request_to_graph_kb_service,
-    send_upload_request_to_vector_kb_service,
+    send_add_document_request_to_graph_kb_service,
+    send_add_document_request_to_vector_kb_service,
+    send_create_request_to_graph_kb_service,
+    send_create_request_to_vector_kb_service,
+    send_delete_document_request_to_graph_kb_service,
+    send_delete_document_request_to_vector_kb_service,
+    send_drop_request_to_graph_kb_service,
+    send_drop_request_to_vector_kb_service,
 )
 from src.vaults.schemas import (
+    AddDocumentRequestToKBService,
     CreateRequestToKBService,
     CreateVaultRequest,
-    DeleteRequestToKBService,
+    DeleteDocumentRequestToKBService,
+    DocumentResponse,
     DocumentText,
+    DropRequestToKBService,
+    VaultPreviewResponse,
+    VaultResponse,
     VaultType,
 )
 
@@ -39,8 +53,8 @@ async def add_vault(
     return vault
 
 
-async def add_document(
-    file: UploadFile, vault_id: uuid.UUID, document_repository: DocumentRepository
+async def handle_document(
+    file: UploadFile, vault_id: UUID, document_repository: DocumentRepository
 ) -> Document:
     id = uuid.uuid4()  # Generate random unique identifier
 
@@ -58,21 +72,34 @@ async def add_document(
     return document
 
 
-async def delete_documents_background(
-    vault_id: uuid.UUID, vault_type: VaultType
-) -> None:
-    delete_request_body = jsonable_encoder(DeleteRequestToKBService(vault_id=vault_id))
+async def drop_knowledge_base_background(vault_id: UUID, vault_type: VaultType) -> None:
+    delete_request_body = jsonable_encoder(DropRequestToKBService(vault_id=vault_id))
 
     if vault_type == VaultType.GRAPH:
-        await send_delete_request_to_graph_kb_service(body=delete_request_body)
+        await send_drop_request_to_graph_kb_service(body=delete_request_body)
     else:
-        await send_delete_request_to_vector_kb_service(body=delete_request_body)
+        await send_drop_request_to_vector_kb_service(body=delete_request_body)
 
 
-async def upload_documents_to_kb(
-    vault_id: uuid.UUID, documents: List[Document], vault_type: VaultType
+async def delete_document_background(
+    vault_id: UUID, vault_type: VaultType, document_id: UUID
 ) -> None:
-    # Make an upload request to graph KB service
+    delete_request_body = jsonable_encoder(
+        DeleteDocumentRequestToKBService(vault_id=vault_id, document_id=document_id)
+    )
+
+    if vault_type == VaultType.GRAPH:
+        await send_delete_document_request_to_graph_kb_service(body=delete_request_body)
+    else:
+        await send_delete_document_request_to_vector_kb_service(
+            body=delete_request_body
+        )
+
+
+async def create_knowledge_base(
+    vault_id: UUID, documents: List[Document], vault_type: VaultType
+) -> None:
+    # Make a create request to KB service
     upload_request_body = jsonable_encoder(
         CreateRequestToKBService(
             vault_id=vault_id,
@@ -83,6 +110,181 @@ async def upload_documents_to_kb(
     )
 
     if vault_type == VaultType.GRAPH:
-        await send_upload_request_to_graph_kb_service(upload_request_body)
+        await send_create_request_to_graph_kb_service(upload_request_body)
     else:
-        await send_upload_request_to_vector_kb_service(upload_request_body)
+        await send_create_request_to_vector_kb_service(upload_request_body)
+
+
+async def add_documents_to_knowledge_base(vault_id: UUID, document: Document) -> None:
+    # Make an add request to KB service
+    upload_request_body = jsonable_encoder(
+        AddDocumentRequestToKBService(
+            vault_id=vault_id,
+            document=DocumentText(document_id=document.id, text=document.text),
+        )
+    )
+
+    vault_type = (await VaultRepository().get(vault_id)).type
+
+    if vault_type == VaultType.GRAPH:
+        await send_add_document_request_to_graph_kb_service(upload_request_body)
+    else:
+        await send_add_document_request_to_vector_kb_service(upload_request_body)
+
+
+async def create_vault(
+    create_vault_request: CreateVaultRequest, files: List[UploadFile]
+) -> VaultResponse:
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
+
+    logging.info(f"Files received: {[f.filename for f in files]}")
+
+    vault_repository = VaultRepository()
+    vault = await add_vault(create_vault_request, vault_repository)
+
+    documents = await asyncio.gather(
+        *[handle_document(file, vault.id, DocumentRepository()) for file in files],
+        return_exceptions=True,
+    )
+    # On any UnsupportedFileType, delete the entire vault and raise an HTTPException
+    for result in documents:
+        if isinstance(result, UnsupportedFileType):
+            await vault_repository.delete(vault.id)
+            raise HTTPException(status_code=406, detail=result.message)
+
+    try:
+        await create_knowledge_base(
+            vault_id=vault.id, documents=documents, vault_type=vault.type
+        )
+    except Exception as e:
+        logging.error(e)
+        await vault_repository.delete(vault.id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error uploading documents to {vault.type} knowledge base",
+        )
+
+    vault_response = VaultResponse(
+        id=vault.id,
+        name=vault.name,
+        type=vault.type,
+        created_at=vault.created_at,
+        user_id=vault.user_id,
+        documents=[
+            DocumentResponse.model_validate(document)
+            for document in await vault_repository.get_vault_documents(vault.id)
+        ],
+    )
+
+    return vault_response
+
+
+async def add_document(
+    vault_id: UUID, file: UploadFile, vault_repository: VaultRepository
+) -> None:
+    if not file:
+        raise HTTPException(status_code=400, detail="File not provided")
+
+    logging.info(f"File received: {file.filename}")
+
+    try:
+        document = await handle_document(file, vault_id, DocumentRepository())
+    except UnsupportedFileType as e:
+        raise HTTPException(status_code=406, detail=e.message)
+
+    try:
+        await add_documents_to_knowledge_base(vault_id=vault_id, document=document)
+    except Exception as e:
+        logging.error(e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error adding documents to knowledge base {vault_id}",
+        )
+
+    vault = await vault_repository.get(vault_id)
+    vault_response = VaultResponse(
+        id=vault.id,
+        name=vault.name,
+        type=vault.type,
+        created_at=vault.created_at,
+        user_id=vault.user_id,
+        documents=[
+            DocumentResponse.model_validate(document)
+            for document in await vault_repository.get_vault_documents(vault.id)
+        ],
+    )
+
+    return vault_response
+
+
+async def delete_vault(
+    vault_id: UUID,
+    vault_repository: VaultRepository,
+    background_tasks: BackgroundTasks,
+) -> None:
+    vault = await vault_repository.get(vault_id)
+    await vault_repository.delete(vault_id)
+
+    background_tasks.add_task(drop_knowledge_base_background, vault_id, vault.type)
+
+
+async def delete_document(
+    vault_id: UUID,
+    document_id: UUID,
+    vault_repository: VaultRepository,
+    background_tasks: BackgroundTasks,
+) -> None:
+    vault_type = (await vault_repository.get(vault_id)).type
+
+    document_repository = DocumentRepository()
+    await document_repository.delete(document_id)
+
+    background_tasks.add_task(
+        delete_document_background, vault_id, vault_type, document_id
+    )
+
+
+async def get_vault_documents(
+    vault_id: UUID,
+    vault_repository: VaultRepository,
+) -> List[DocumentResponse]:
+    documents = await vault_repository.get_vault_documents(vault_id)
+
+    return [DocumentResponse.model_validate(document) for document in documents]
+
+
+async def get_users_vaults(user_id: UUID) -> List[VaultPreviewResponse]:
+    vault_repository = VaultRepository()
+
+    vaults = await vault_repository.get_users_vaults(user_id)
+
+    return [VaultPreviewResponse.model_validate(vault) for vault in vaults]
+
+
+async def get_vault_by_id(
+    vault_id: UUID, vault_repository: VaultRepository
+) -> VaultResponse:
+    vault = await vault_repository.get(vault_id)
+
+    vault_response = VaultResponse(
+        id=vault.id,
+        name=vault.name,
+        type=vault.type,
+        created_at=vault.created_at,
+        user_id=vault.user_id,
+        documents=[
+            DocumentResponse.model_validate(document)
+            for document in await vault_repository.get_vault_documents(vault.id)
+        ],
+    )
+
+    return vault_response
+
+
+async def get_document_by_id(
+    document_id: UUID,
+    document_repository: DocumentRepository,
+) -> DocumentResponse:
+    document = await document_repository.get(document_id)
+    return DocumentResponse.model_validate(document)

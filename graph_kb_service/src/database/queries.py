@@ -9,7 +9,7 @@ from neo4j.exceptions import ClientError
 from src.database.neo4j import neo4j_driver
 
 
-async def create_database(vault_id: str) -> None:
+async def create_database(vault_id: UUID) -> None:
     async with neo4j_driver.session() as session:
         # Add prefix to the name of format uuid to avoid naming restrictions
         await session.run(f"CREATE DATABASE `db-{vault_id}` IF NOT EXISTS")
@@ -20,7 +20,7 @@ async def create_database(vault_id: str) -> None:
         )
 
 
-async def drop_database(vault_id: str) -> None:
+async def drop_database(vault_id: UUID) -> None:
     async with neo4j_driver.session() as session:
         try:
             await session.run(f"DROP ALIAS `{vault_id}` IF EXISTS FOR DATABASE")
@@ -34,7 +34,14 @@ async def drop_database(vault_id: str) -> None:
                 logging.error(e)
 
 
-async def execute_cyphers(cyphers: List[str], vault_id: UUID) -> None:
+async def drop_document(vault_id: UUID, document_id: UUID) -> None:
+    async with neo4j_driver.session(database=str(vault_id)) as session:
+        await session.run(
+            f"MATCH ()-[r]-() WHERE r.document_id = '{document_id}' DELETE r"
+        )
+
+
+async def execute_cyphers(vault_id: UUID, cyphers: List[str]) -> None:
     logging.info("Executing cyphers")
     start_time = time.perf_counter()
 

@@ -22,6 +22,6 @@ async def document_exists(document_id: Annotated[UUID, Body()]) -> DocumentRepos
 
     document = await document_repository.get(document_id)
     if not document:
-        raise HTTPException(status_code=404, detail="Vault not found")
+        raise HTTPException(status_code=404, detail="Document not found")
 
     return document_repository

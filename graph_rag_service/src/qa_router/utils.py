@@ -9,7 +9,7 @@ from neo4j.exceptions import Neo4jError
 
 async def generate_answer(input: Input) -> Answer:
     chat_history = construct_langchain_history(input.history)
-    agent_executor = initialize_agent_with_tools(input.vault_id)
+    agent_executor = initialize_agent_with_tools(graph_kb_name=input.vault_id)
 
     try:
         response = await agent_executor.ainvoke(
@@ -30,8 +30,11 @@ async def generate_answer(input: Input) -> Answer:
 
     traceback = []
     for i in range(len(response["intermediate_steps"])):
-        traceback.extend(
-            response["intermediate_steps"][i][1]["intermediate_steps"][0]["results"]
-        )
-
+        try:        
+            traceback.extend(
+                response["intermediate_steps"][i][1]["intermediate_steps"][0]["results"]
+            )
+        except Exception as e:
+            logging.error(e)
+            
     return Answer(answer=answer, traceback=traceback)

@@ -14,6 +14,16 @@ class DocumentsInput(BaseModel):
     documents: List[Document]
 
 
+class DocumentInput(BaseModel):
+    vault_id: UUID
+    document: Document
+
+
 class DocumentRelations(BaseModel):
     document_id: UUID
     relations: List
+
+
+class DeleteDocumentInput(BaseModel):
+    vault_id: UUID
+    document_id: UUID

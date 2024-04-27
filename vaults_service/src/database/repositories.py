@@ -33,7 +33,7 @@ class DocumentRepository(AbstractRepository):
     def __init__(self):
         self.session = Session()
 
-    async def add(self, entity):
+    async def add(self, entity) -> None:
         async with self.session as session:
             async with session.begin():
                 session.add(entity)
@@ -43,12 +43,19 @@ class DocumentRepository(AbstractRepository):
             document = await session.get(models.Document, id)
             return document
 
+    async def delete(self, id: UUID) -> None:
+        async with self.session as session:
+            async with session.begin():
+                document = await session.get(models.Document, id)
+                if document:
+                    await session.delete(document)
+
 
 class VaultRepository(AbstractRepository):
     def __init__(self):
         self.session = Session()
 
-    async def add(self, entity):
+    async def add(self, entity) -> None:
         async with self.session as session:
             async with session.begin():
                 session.add(entity)
