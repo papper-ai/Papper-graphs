@@ -1,10 +1,11 @@
 import json
+import re
 from datetime import datetime
 from enum import Enum
 from typing import List
 from uuid import UUID
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator, validator
 
 
 class VaultType(str, Enum):
@@ -39,22 +40,43 @@ class DeleteRequestToKBService(BaseModel):
     vault_id: UUID
 
 
+class DocumentResponse(BaseModel):
+    id: UUID
+    name: str
+    text: str = Field(
+        ..., description="A preview of the text around the first 200 characters"
+    )
+    vault_id: UUID
+
+    @validator("text", pre=True, always=True)
+    def text_max_length(cls, v):
+        if isinstance(v, str) and len(v) > 200:
+            # Find the index of the first whitespace character after the 100th character
+            if match := re.search(r"\s", v[200:]):
+                return v[: (match.start() + 200)] + "..."
+            return v[:200] + "..."  # Return first 200 characters if no whitespace found
+        return v
+
+    class Config:
+        from_attributes = True
+
+
 class VaultResponse(BaseModel):
     id: UUID
     name: str
     type: VaultType
     created_at: datetime
     user_id: UUID
+    documents: List[DocumentResponse]
 
     class Config:
         from_attributes = True
 
 
-class DocumentResponse(BaseModel):
+class VaultPreviewResponse(BaseModel):
     id: UUID
     name: str
-    text: str
-    vault_id: UUID
+    type: VaultType
 
     class Config:
         from_attributes = True
