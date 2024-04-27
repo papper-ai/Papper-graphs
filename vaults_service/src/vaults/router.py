@@ -12,7 +12,9 @@ from src.vaults.schemas import (
     VaultResponse,
 )
 from src.vaults.utils import (
+    add_document,
     create_vault,
+    delete_document,
     delete_vault,
     get_document_by_id,
     get_users_vaults,
@@ -33,6 +35,17 @@ async def create_vault_route(
     return await create_vault(create_vault_request, files)
 
 
+@vaults_router.post(
+    "/add_document", status_code=status.HTTP_201_CREATED, response_model=VaultResponse
+)
+async def add_document_route(
+    vault_id: Annotated[UUID, Body(embed=True)],
+    vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
+    file: UploadFile,
+):
+    return await add_document(vault_id, file, vault_repository)
+
+
 @vaults_router.delete("/delete_vault", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_vault_route(
     vault_id: Annotated[UUID, Body(embed=True)],
@@ -40,6 +53,16 @@ async def delete_vault_route(
     background_tasks: BackgroundTasks,
 ) -> None:
     await delete_vault(vault_id, vault_repository, background_tasks)
+
+
+@vaults_router.delete("/delete_document", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document_route(
+    vault_id: Annotated[UUID, Body()],
+    document_id: Annotated[UUID, Body()],
+    vault_repository: Annotated[VaultRepository, Depends(vault_exists)],
+    background_tasks: BackgroundTasks,
+) -> None:
+    await delete_document(vault_id, document_id, vault_repository, background_tasks)
 
 
 @vaults_router.patch("/rename_vault", status_code=status.HTTP_200_OK)

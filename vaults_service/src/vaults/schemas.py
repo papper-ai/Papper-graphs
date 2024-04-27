@@ -36,8 +36,18 @@ class CreateRequestToKBService(BaseModel):
     documents: List[DocumentText]
 
 
-class DeleteRequestToKBService(BaseModel):
+class AddDocumentRequestToKBService(BaseModel):
     vault_id: UUID
+    document: DocumentText
+
+
+class DropRequestToKBService(BaseModel):
+    vault_id: UUID
+
+
+class DeleteDocumentRequestToKBService(BaseModel):
+    vault_id: UUID
+    document_id: UUID
 
 
 class DocumentResponse(BaseModel):
