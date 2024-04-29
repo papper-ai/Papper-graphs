@@ -24,21 +24,22 @@ async def generate_answer(input: Input) -> Answer:
     logging.info(response)
 
     answer = (
-        response["output"]["result"]
-        if isinstance(response["output"], dict)
-        else response["output"]
-    )
-
+            response["output"]["result"]
+            if isinstance(response["output"], dict)
+            else response["output"]
+        )
+    
     traceback = []
-    if response["intermediate_steps"]:
-        for i in range(len(response["intermediate_steps"][0][1]["intermediate_steps"])):
-            try:
-                traceback.extend(
-                    response["intermediate_steps"][0][1]["intermediate_steps"][i][
-                        "results"
-                    ]
-                )
-            except Exception as e:
-                logging.error(e)
+    if input.vault_id:
+        if response["intermediate_steps"]:
+            for i in range(len(response["intermediate_steps"][0][1]["intermediate_steps"])):
+                try:
+                    traceback.extend(
+                        response["intermediate_steps"][0][1]["intermediate_steps"][i][
+                            "results"
+                        ]
+                    )
+                except Exception as e:
+                    logging.error(e)
 
     return Answer(content=answer, traceback=traceback)
