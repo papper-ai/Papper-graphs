@@ -1,10 +1,11 @@
 import logging
 
+from fastapi.exceptions import HTTPException
+from neo4j.exceptions import Neo4jError
+
 from src.langchain_utils.agent import initialize_agent_with_tools
 from src.langchain_utils.history import construct_langchain_history
 from src.qa_router.schemas import Answer, Input
-from fastapi.exceptions import HTTPException
-from neo4j.exceptions import Neo4jError
 
 
 async def generate_answer(input: Input) -> Answer:
@@ -23,18 +24,22 @@ async def generate_answer(input: Input) -> Answer:
     logging.info(response)
 
     answer = (
-        response["output"]["result"]
-        if isinstance(response["output"], dict)
-        else response["output"]
-    )
-
+            response["output"]["result"]
+            if isinstance(response["output"], dict)
+            else response["output"]
+        )
+    
     traceback = []
-    for i in range(len(response["intermediate_steps"])):
-        try:        
-            traceback.extend(
-                response["intermediate_steps"][i][1]["intermediate_steps"][0]["results"]
-            )
-        except Exception as e:
-            logging.error(e)
-            
-    return Answer(answer=answer, traceback=traceback)
+    if input.vault_id:
+        if response["intermediate_steps"]:
+            for i in range(len(response["intermediate_steps"][0][1]["intermediate_steps"])):
+                try:
+                    traceback.extend(
+                        response["intermediate_steps"][0][1]["intermediate_steps"][i][
+                            "results"
+                        ]
+                    )
+                except Exception as e:
+                    logging.error(e)
+
+    return Answer(content=answer, traceback=traceback)

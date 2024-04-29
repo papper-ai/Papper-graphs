@@ -20,6 +20,22 @@ from src.database.queries import get_graph_view
 INTERMEDIATE_STEPS_KEY = "intermediate_steps"
 
 
+def construct_schema(triplets: List[Dict[str]]) -> str:
+    """Filter the schema based on included or excluded types"""
+
+    relations = []
+    schema = ""
+
+    for triplet in triplets:
+        relation = (
+            f'({triplet["n.name"]})-[{triplet["relationship"]}]->({triplet["m.name"]})'
+        )
+        relations.append(relation)
+
+    schema += ",".join(relations)
+    return schema
+
+
 async def extract_cypher(text: str) -> str:
     """Extract Cypher code from a text.
 
@@ -38,26 +54,20 @@ async def extract_cypher(text: str) -> str:
     return matches[0] if matches else text
 
 
-def construct_schema(graph_view: List[Dict[str]]) -> str:
-    """Filter the schema based on included or excluded types"""
-
-    relations = []
-    schema = ""
-
-    if len(graph_view) > 100:
-        triplets = random.sample(graph_view, 100)
-        schema += "(!) Showing only 100 random relations from graph. Rerun to get another relations.\n"
-    else:
-        triplets = graph_view
-
-    for triplet in triplets:
-        relation = (
-            f'({triplet["n.name"]})-[{triplet["relationship"]}]->({triplet["m.name"]})'
-        )
-        relations.append(relation)
-
-    schema += ",".join(relations)
-    return schema
+async def parse_list(input: str) -> List[str]:
+    try:
+        # This pattern matches items enclosed in single or double quotes
+        # It allows for quotes inside the items as long as they are not at the edges.
+        pattern = re.compile(r'(?<!\\)["\']([^"\']+?)["\'](?!\\)')
+        # Find all non-greedy matches that are not preceded or followed by a backslash
+        # This avoids capturing escaped quotes
+        matches = pattern.findall(input)
+        results = [match.strip().lower() for match in matches[:5]]
+        return results
+    except Exception as e:
+        # Log the error or handle it as needed
+        print(f"An error occurred while parsing the list: {e}")
+        return []
 
 
 class CustomGraphCypherQAChain(Chain):
@@ -80,7 +90,6 @@ class CustomGraphCypherQAChain(Chain):
     graph_schema: str
     input_key: str = "query"  #: :meta private:
     output_key: str = "result"  #: :meta private:
-    top_k: int = 10
     graph_kb_name: Optional[str] = None
     """Number of results to return from the query"""
     return_intermediate_steps: bool = False
@@ -173,7 +182,7 @@ class CustomGraphCypherQAChain(Chain):
             )
 
         graph_view = get_graph_view(db_name=graph_kb_name)
-        graph_schema = construct_schema(graph_view)
+        graph_schema = construct_schema(triplets=graph_view)
 
         return cls(
             graph_schema=graph_schema,
@@ -202,36 +211,46 @@ class CustomGraphCypherQAChain(Chain):
 
         intermediate_steps: List = []
 
-        generated_cypher = self.cypher_generation_chain.run(
+        nodes_string = self.cypher_generation_chain.run(
             {"question": question, "schema": self.graph_schema}, callbacks=callbacks
         )
 
-        # Extract Cypher code if it is wrapped in backticks
-        generated_cypher = (await extract_cypher(generated_cypher)).lower()
+        nodes = await parse_list(nodes_string)
+        logging.info(nodes)
+
+        generated_cyphers = [
+            f"MATCH (a)-[r]-(b) WHERE a.name = '{node.lower()}' RETURN r"
+            for node in nodes
+        ]
 
         await _run_manager.on_text("Generated Cypher:", end="\n", verbose=self.verbose)
         await _run_manager.on_text(
-            generated_cypher, color="green", end="\n", verbose=self.verbose
+            generated_cyphers, color="green", end="\n", verbose=self.verbose
         )
 
-        # Retrieve and limit the number of results
-        # Generated Cypher be null if query corrector identifies invalid schema
-        if generated_cypher:
-            try:
-                results = [
-                    {
-                        "document_id": record["r"]["document_id"],
-                        "information": record["r"]["information"],
-                    }
-                    for record in (await neo4j_async_driver.execute_query(
-                        query_=generated_cypher, database_=self.graph_kb_name
-                    )).records
-                ]
-                context = [result["information"] for result in results[: self.top_k]]
-            except Exception as e:
-                logging.error(e)
-                results = []
-                context = []
+        # Retrieve the results
+        if generated_cyphers:
+            results = []
+            context = []
+            for generated_cypher in generated_cyphers:
+                try:
+                    result = [
+                        {
+                            "document_id": record["r"]["document_id"],
+                            "information": record["r"]["information"],
+                        }
+                        for record in (
+                            await neo4j_async_driver.execute_query(
+                                query_=generated_cypher, database_=self.graph_kb_name
+                            )
+                        ).records
+                    ]
+                    results.append(result)
+                    logging.info([context["information"] for context in result])
+                    context.extend([context["information"] for context in result])
+                except Exception as e:
+                    logging.error(e)
+            logging.info(context)
         else:
             results = []
             context = []
@@ -244,7 +263,10 @@ class CustomGraphCypherQAChain(Chain):
                 str(context), color="green", end="\n", verbose=self.verbose
             )
 
-            intermediate_steps.append({"query": generated_cypher, "results": results})
+            for generated_cypher, results in zip(generated_cyphers, results):
+                intermediate_steps.append(
+                    {"query": generated_cypher, "results": results}
+                )
 
             result = self.qa_chain(
                 {"question": question, "context": context},
