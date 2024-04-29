@@ -33,5 +33,5 @@ class SearchResult(BaseModel):
 
 
 class Answer(BaseModel):
-    answer: str
+    content: str
     traceback: List[SearchResult]

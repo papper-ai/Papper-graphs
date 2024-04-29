@@ -1,16 +1,12 @@
-import langchain
-from langchain_community.llms.gigachat import GigaChat
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI as ChatAPI
 
-langchain.debug = True
+llm_url = "http://host.docker.internal:8001/v1/"
 
-llm_url = "http://host.docker.internal:8002/v1/"
-
-custom_llm = ChatOpenAI(
+custom_llm = ChatAPI(
     base_url=llm_url,
-    api_key="sk-no-key-required",
+    api_key="sk-not-required",
     verbose=True,
-    temperature=0
+    temperature=0,
+    model="lightblue/suzume-llama-3-8B-multilingual",
+    extra_body={"stop_token_ids": [128009]},
 )
-
-gigachat_llm = GigaChat(verify_ssl_certs=False)

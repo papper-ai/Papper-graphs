@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from src.qa_router.router import qa_router
+from src.qa_router import qa_router
 
 app = FastAPI()
 

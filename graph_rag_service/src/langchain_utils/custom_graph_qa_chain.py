@@ -20,24 +20,6 @@ from src.database.queries import get_graph_view
 INTERMEDIATE_STEPS_KEY = "intermediate_steps"
 
 
-async def extract_cypher(text: str) -> str:
-    """Extract Cypher code from a text.
-
-    Args:
-        text: Text to extract Cypher code from.
-
-    Returns:
-        Cypher code extracted from the text.
-    """
-    # The pattern to find Cypher code enclosed in triple backticks
-    pattern = r"```(.*?)```"
-
-    # Find all matches in the input text
-    matches = re.findall(pattern, text, re.DOTALL)
-
-    return matches[0] if matches else text
-
-
 def construct_schema(graph_view: List[Dict[str]]) -> str:
     """Filter the schema based on included or excluded types"""
 
@@ -60,6 +42,40 @@ def construct_schema(graph_view: List[Dict[str]]) -> str:
     return schema
 
 
+async def extract_cypher(text: str) -> str:
+    """Extract Cypher code from a text.
+
+    Args:
+        text: Text to extract Cypher code from.
+
+    Returns:
+        Cypher code extracted from the text.
+    """
+    # The pattern to find Cypher code enclosed in triple backticks
+    pattern = r"```(.*?)```"
+
+    # Find all matches in the input text
+    matches = re.findall(pattern, text, re.DOTALL)
+
+    return matches[0] if matches else text
+
+
+async def parse_list(input: str) -> List[str]:
+    try:
+        # This pattern matches items enclosed in single or double quotes
+        # It allows for quotes inside the items as long as they are not at the edges.
+        pattern = re.compile(r'(?<!\\)["\']([^"\']+?)["\'](?!\\)')
+        # Find all non-greedy matches that are not preceded or followed by a backslash
+        # This avoids capturing escaped quotes
+        matches = pattern.findall(input)
+        results = [match.strip().lower() for match in matches[:5]]
+        return results
+    except Exception as e:
+        # Log the error or handle it as needed
+        print(f"An error occurred while parsing the list: {e}")
+        return []
+
+
 class CustomGraphCypherQAChain(Chain):
     """Chain for question-answering against a graph by generating Cypher statements.
 
@@ -80,7 +96,6 @@ class CustomGraphCypherQAChain(Chain):
     graph_schema: str
     input_key: str = "query"  #: :meta private:
     output_key: str = "result"  #: :meta private:
-    top_k: int = 10
     graph_kb_name: Optional[str] = None
     """Number of results to return from the query"""
     return_intermediate_steps: bool = False
@@ -202,36 +217,46 @@ class CustomGraphCypherQAChain(Chain):
 
         intermediate_steps: List = []
 
-        generated_cypher = self.cypher_generation_chain.run(
+        nodes_string = self.cypher_generation_chain.run(
             {"question": question, "schema": self.graph_schema}, callbacks=callbacks
         )
 
-        # Extract Cypher code if it is wrapped in backticks
-        generated_cypher = (await extract_cypher(generated_cypher)).lower()
+        nodes = await parse_list(nodes_string)
+        logging.info(nodes)
+
+        generated_cyphers = [
+            f"MATCH (a)-[r]-(b) WHERE a.name = '{node.lower()}' RETURN r"
+            for node in nodes
+        ]
 
         await _run_manager.on_text("Generated Cypher:", end="\n", verbose=self.verbose)
         await _run_manager.on_text(
-            generated_cypher, color="green", end="\n", verbose=self.verbose
+            generated_cyphers, color="green", end="\n", verbose=self.verbose
         )
 
-        # Retrieve and limit the number of results
-        # Generated Cypher be null if query corrector identifies invalid schema
-        if generated_cypher:
-            try:
-                results = [
-                    {
-                        "document_id": record["r"]["document_id"],
-                        "information": record["r"]["information"],
-                    }
-                    for record in (await neo4j_async_driver.execute_query(
-                        query_=generated_cypher, database_=self.graph_kb_name
-                    )).records
-                ]
-                context = [result["information"] for result in results[: self.top_k]]
-            except Exception as e:
-                logging.error(e)
-                results = []
-                context = []
+        # Retrieve the results
+        if generated_cyphers:
+            results = []
+            context = []
+            for generated_cypher in generated_cyphers:
+                try:
+                    result = [
+                        {
+                            "document_id": record["r"]["document_id"],
+                            "information": record["r"]["information"],
+                        }
+                        for record in (
+                            await neo4j_async_driver.execute_query(
+                                query_=generated_cypher, database_=self.graph_kb_name
+                            )
+                        ).records
+                    ]
+                    results.append(result)
+                    logging.info([context["information"] for context in result])
+                    context.extend([context["information"] for context in result])
+                except Exception as e:
+                    logging.error(e)
+            logging.info(context)
         else:
             results = []
             context = []
@@ -244,7 +269,10 @@ class CustomGraphCypherQAChain(Chain):
                 str(context), color="green", end="\n", verbose=self.verbose
             )
 
-            intermediate_steps.append({"query": generated_cypher, "results": results})
+            for generated_cypher, results in zip(generated_cyphers, results):
+                intermediate_steps.append(
+                    {"query": generated_cypher, "results": results}
+                )
 
             result = self.qa_chain(
                 {"question": question, "context": context},
