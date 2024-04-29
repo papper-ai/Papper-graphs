@@ -20,17 +20,11 @@ from src.database.queries import get_graph_view
 INTERMEDIATE_STEPS_KEY = "intermediate_steps"
 
 
-def construct_schema(graph_view: List[Dict[str]]) -> str:
+def construct_schema(triplets: List[Dict[str]]) -> str:
     """Filter the schema based on included or excluded types"""
 
     relations = []
     schema = ""
-
-    if len(graph_view) > 100:
-        triplets = random.sample(graph_view, 100)
-        schema += "(!) Showing only 100 random relations from graph. Rerun to get another relations.\n"
-    else:
-        triplets = graph_view
 
     for triplet in triplets:
         relation = (
@@ -188,7 +182,7 @@ class CustomGraphCypherQAChain(Chain):
             )
 
         graph_view = get_graph_view(db_name=graph_kb_name)
-        graph_schema = construct_schema(graph_view)
+        graph_schema = construct_schema(triplets=graph_view)
 
         return cls(
             graph_schema=graph_schema,
