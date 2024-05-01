@@ -1,16 +1,22 @@
 version: '3.9'
 
 services:
-  microservice1:
-    build: microservice1
+  embeddings_model:
+    build: embedding-model-service
     volumes:
-      - ./microservice1:/usr/src/microservice1
+      - ./embedding-model-service:/usr/src/embedding-model-service
     env_file:
       - .env
     ports:
       - ${HOST_PORT}:8000
-    command: > 
+    command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+      
+  qdrant:
+    image: qdrant/qdrant:v1.9.0
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
 
-volumes:
-  db_data:
