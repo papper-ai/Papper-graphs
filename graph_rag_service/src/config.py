@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     neo4j_user: str = "neo4j"
     neo4j_password: str
     gigachat_credentials: str
-
+    remote_url: str = "http://host.docker.internal:8001"
+    
     @property
     def neo4j_uri(self) -> str:
         return "bolt://neo4j:7687"
