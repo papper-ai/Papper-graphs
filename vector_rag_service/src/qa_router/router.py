@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from starlette import status
 
-from vector_rag_service.src.qa_router.schemas import Answer, Input
+from qa_router.utils import generate_answer
+from qa_router.schemas import Answer, Input
 
 router = APIRouter(tags=["QA"])
 

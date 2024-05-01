@@ -15,4 +15,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-settings.openai_client = openai.AsyncClient(base_url="http://localhost:8000/v1", api_key="ebeishy-paswword")
+settings.openai_client = openai.AsyncClient(base_url="http://embeddings_model:8000/v1", api_key="ebeishy-paswword")

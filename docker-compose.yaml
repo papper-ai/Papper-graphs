@@ -20,3 +20,14 @@ services:
     volumes:
       - ./qdrant_storage:/qdrant/storage
 
+  vector_kb_service:
+    build: vector_kb_service
+    volumes:
+      - ./vector_kb_service:/usr/src/vector_kb_service
+    env_file:
+      - .env
+    ports:
+      - 8001:8000
+    command: >
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+

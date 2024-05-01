@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator, field_validator
@@ -16,15 +16,9 @@ class Message(BaseModel):
 
 
 class Input(BaseModel):
-    vault_id: UUID | str = Field(description="Vault ID")
+    vault_id: str = Field(examples=["3fa85f64-5717-4562-b3fc-2c963f66afa6"])
     query: str = Field(description="User's new message")
-    history: List[Message] = Field(examples=[{"role": "user", "content": "Hello"}], description="Chat history")
-
-    @field_validator("vault_id", mode='after')
-    def convert_uuid_to_str(self, v):
-        if isinstance(v, UUID):
-            return str(v)
-        return v
+    history: List[Message] = Field(examples=[[{"role": "user", "content": "Hello"}]], description="Chat history")
 
 
 class SearchResult(BaseModel):
