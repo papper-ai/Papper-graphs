@@ -1,6 +1,7 @@
 from langchain_openai import ChatOpenAI as ChatAPI
+from src.config import settings
 
-llm_url = "http://host.docker.internal:8001/v1/"
+llm_url = settings.remote_url + '/v1'
 
 custom_llm = ChatAPI(
     base_url=llm_url,
