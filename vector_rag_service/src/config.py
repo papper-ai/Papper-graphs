@@ -16,5 +16,5 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-openai_client = AsyncClient(base_url="http://localhost:8000/v1", api_key="ebeishy-paswword-rag")
+openai_client = AsyncClient(base_url="http://localhost:8101/v1", api_key="password")
 settings.openai_client = openai_client
