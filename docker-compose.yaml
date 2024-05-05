@@ -8,7 +8,7 @@ services:
     env_file:
       - .env
     ports:
-      - ${HOST_PORT}:8000
+      - ${EMBEDDINGS_MODEL_PORT}:8000
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
       
@@ -27,7 +27,18 @@ services:
     env_file:
       - .env
     ports:
-      - 8001:8000
+      - ${VECTOR_KB_SERVICE_PORT}:8000
+    command: >
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+
+  vector_rag_service:
+    build: vector_rag_service
+    volumes:
+      - ./vector_rag_service:/usr/src/vector_rag_service
+    env_file:
+      - .env
+    ports:
+      - ${VECTOR_RAG_SERVICE_PORT}:8000
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
 

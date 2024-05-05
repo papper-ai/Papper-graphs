@@ -3,6 +3,8 @@ from openai import AsyncClient
 
 
 class Settings(BaseSettings):
+    URL_TO_LLM: str
+    URL_TO_EMBEDDINGS: str
     _llm_client = None
 
     @property

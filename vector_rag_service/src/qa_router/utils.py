@@ -11,9 +11,7 @@ def create_qa_prompt(context: str, question: str) -> str:
     return f'''
 Используй следующие фрагменты контекста, чтобы ответить на вопрос в конце. Если ты не знаешь ответа, просто скажи, что ты не знаешь, не пытайся придумать ответ.
 
-```
 {context}
-```
 
 Вопрос: {question}
 Полезный ответ:
@@ -29,15 +27,13 @@ async def generate_answer(input: Input):
 
 
 async def create_embedding(query: str) -> List[float]:
-    base_url = settings.openai_client.base_url
-    settings.openai_client.base_url = "http://localhost:80/v1"
+    settings.openai_client.base_url = settings.URL_TO_EMBEDDINGS
     response = await settings.openai_client.embeddings.create(input=[query], model=" ")
-    settings.openai_client.base_url = base_url
     return list(map(lambda x: x.embedding, response.data))[0]
 
 
 async def create_completion(prompt: str) -> str:
-    print(prompt)
+    settings.openai_client.base_url = settings.URL_TO_LLM
     response = await settings.openai_client.completions.create(model="lightblue/suzume-llama-3-8B-multilingual",
                                                                prompt=prompt,
                                                                temperature=0,

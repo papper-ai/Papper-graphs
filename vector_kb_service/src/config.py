@@ -3,6 +3,8 @@ import openai
 
 
 class Settings(BaseSettings):
+    URL_TO_EMBEDDINGS: str
+
     _openai_client = None
 
     @property
@@ -15,4 +17,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-settings.openai_client = openai.AsyncClient(base_url="http://embeddings_model:8000/v1", api_key="no-password")
+settings.openai_client = openai.AsyncClient(base_url=settings.URL_TO_EMBEDDINGS, api_key="no-password")
