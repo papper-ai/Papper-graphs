@@ -1,6 +1,41 @@
 version: '3.9'
 
 services:
+  embeddings_model:
+    build: embedding-model-service
+    volumes:
+      - ./embedding-model-service:/usr/src/embedding-model-service
+    env_file:
+      - .env
+    ports:
+      - 8800:8000
+    command: >
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+  qdrant:
+    image: qdrant/qdrant:v1.9.0
+    ports:
+      - 8610:6333
+      - 8611:6334
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+  vector_kb_service:
+    build: vector_kb_service
+    volumes:
+      - ./vector_kb_service:/usr/src/vector_kb_service
+    env_file:
+      - .env
+    ports:
+      - 8600:8000
+    command: >
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+  vector_rag_service:
+    build: vector_rag_service
+    volumes:
+      - ./vector_rag_service:/usr/src/vector_rag_service
+    ports
+     - 8700:8000
+    command: >
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
   neo4j:
     image: neo4j:5.17.0-enterprise
     volumes:
@@ -76,6 +111,7 @@ services:
 volumes:
   graph_data:
   vaults_service_postgres_data:
+  qdrant_storage:
 
 networks:
   vaults_services_network:
