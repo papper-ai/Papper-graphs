@@ -162,9 +162,10 @@ cython_debug/
 # Sertificates
 certs/
 
-# Models
-rut5_REBEL_base/
-*.whl
+qdrant_storage/
+/qdrant_storage/
+
+/.idea/
 
 # Test files
 .py
