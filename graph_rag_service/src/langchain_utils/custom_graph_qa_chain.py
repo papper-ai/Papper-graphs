@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import random
 import re
 from typing import Any, Dict, List, Optional
 
@@ -25,6 +26,12 @@ def construct_schema(triplets: List[Dict[str]]) -> str:
     relations = []
     schema = ""
 
+    logging.info(f"Triplets: {len(triplets)}")
+    
+    if len(triplets) > 250:
+        schema += f"Showing only 250 of {len(triplets)}, rerun tool to see more."
+        triplets = random.sample(triplets, 250)
+        
     for triplet in triplets:
         relation = (
             f'({triplet["n.name"]})-[{triplet["relationship"]}]->({triplet["m.name"]})'
@@ -183,6 +190,8 @@ class CustomGraphCypherQAChain(Chain):
         graph_view = get_graph_view(db_name=graph_kb_name)
         graph_schema = construct_schema(triplets=graph_view)
 
+        logging.info(graph_schema)
+        
         return cls(
             graph_schema=graph_schema,
             graph_kb_name=graph_kb_name,
@@ -244,9 +253,20 @@ class CustomGraphCypherQAChain(Chain):
                             )
                         ).records
                     ]
-                    results.append(result)
-                    logging.info([context["information"] for context in result])
-                    context.extend([context["information"] for context in result])
+                    
+                    seen = set()
+                    deduplicated_result = []
+
+                    for document in result:
+                        # Convert the dictionary to a hashable tuple of its items
+                        identifier = tuple(sorted(document.items()))
+                        if identifier not in seen:
+                            deduplicated_result.append(document)
+                            seen.add(identifier)
+                    
+                    results.append(deduplicated_result)
+                    logging.info([context["information"] for context in deduplicated_result])
+                    context.extend([context["information"] for context in deduplicated_result])
                 except Exception as e:
                     logging.error(e)
             logging.info(context)
