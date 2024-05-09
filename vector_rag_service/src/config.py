@@ -7,8 +7,8 @@ BASE_DIR = Path(__file__).parent
 
 
 class Settings(BaseSettings):
-    url_to_llm: str
-    url_to_embeddings: str
+    URL_TO_LLM: str
+    URL_TO_EMBEDDINGS: str
     _llm_client = None
 
     @property
@@ -25,5 +25,5 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-openai_client = AsyncClient(base_url=settings.url_to_llm, api_key="password")
+openai_client = AsyncClient(base_url=settings.URL_TO_LLM, api_key="password")
 settings.openai_client = openai_client
