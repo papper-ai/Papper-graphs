@@ -36,6 +36,5 @@ async def create_completion(prompt: str) -> str:
     settings.openai_client.base_url = settings.URL_TO_LLM
     response = await settings.openai_client.completions.create(model="lightblue/suzume-llama-3-8B-multilingual",
                                                                prompt=prompt,
-                                                               temperature=0,
-                                                               max_tokens=1024)
-    return response.choices[0].text
+                                                               temperature=0.0)
+    return response.choices[0].text.replace('<|eot_id|>', '')
