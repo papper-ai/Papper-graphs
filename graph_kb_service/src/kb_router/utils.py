@@ -61,7 +61,9 @@ async def request_relation_extraction(
 ) -> List[DocumentRelations]:
     start_time = time.perf_counter()
 
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=60*5, connect=5)
+    
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         tasks = [
             send_extract_relations_request(session, document.text)
             for document in documents

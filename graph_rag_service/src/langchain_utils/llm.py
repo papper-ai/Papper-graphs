@@ -9,5 +9,6 @@ custom_llm = ChatAPI(
     verbose=True,
     temperature=0,
     model="lightblue/suzume-llama-3-8B-multilingual",
+    timeout=60*5,
     extra_body={"stop_token_ids": [128009]},
 )
