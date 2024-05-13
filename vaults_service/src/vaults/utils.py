@@ -10,7 +10,7 @@ from fastapi.exceptions import HTTPException
 
 from src.database.models import Document, Vault
 from src.database.repositories import DocumentRepository, VaultRepository
-from src.utils.exceptions import UnsupportedFileType
+from src.utils.exceptions import UnsupportedFileType, EmptyFile
 from src.utils.readers import read_document
 from src.utils.requests import (
     send_add_document_request_to_graph_kb_service,
@@ -60,6 +60,9 @@ async def handle_document(
 
     text = await read_document(file)
 
+    if text == "":
+        raise EmptyFile()
+        
     document = Document(
         id=id,
         name=file.filename,
@@ -115,7 +118,7 @@ async def create_knowledge_base(
         await send_create_request_to_vector_kb_service(upload_request_body)
 
 
-async def add_documents_to_knowledge_base(vault_id: UUID, document: Document) -> None:
+async def add_document_to_knowledge_base(vault_id: UUID, document: Document) -> None:
     # Make an add request to KB service
     upload_request_body = jsonable_encoder(
         AddDocumentRequestToKBService(
@@ -153,6 +156,10 @@ async def create_vault(
             await vault_repository.delete(vault.id)
             raise HTTPException(status_code=406, detail=result.message)
 
+    if all(isinstance(result, EmptyFile) for result in documents):
+        await vault_repository.delete(vault.id)
+        raise HTTPException(status_code=406, detail=result.message)
+        
     try:
         await create_knowledge_base(
             vault_id=vault.id, documents=documents, vault_type=vault.type
@@ -192,9 +199,11 @@ async def add_document(
         document = await handle_document(file, vault_id, DocumentRepository())
     except UnsupportedFileType as e:
         raise HTTPException(status_code=406, detail=e.message)
+    except EmptyFile as e:
+        raise HTTPException(status_code=406, detail=e.message)
 
     try:
-        await add_documents_to_knowledge_base(vault_id=vault_id, document=document)
+        await add_document_to_knowledge_base(vault_id=vault_id, document=document)
     except Exception as e:
         logging.error(e)
         raise HTTPException(
