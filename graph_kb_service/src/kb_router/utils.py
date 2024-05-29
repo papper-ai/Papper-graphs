@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import time
 from typing import List
@@ -61,21 +60,15 @@ async def request_relation_extraction(
 ) -> List[DocumentRelations]:
     start_time = time.perf_counter()
 
-    timeout = aiohttp.ClientTimeout(total=60*5, connect=5)
-    
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        tasks = [
-            send_extract_relations_request(session, document.text)
-            for document in documents
-        ]
-        responses = await asyncio.gather(*tasks)
-
+    timeout = aiohttp.ClientTimeout(total=60 * 5, connect=5)
     relations = []
 
-    for document, response in zip(documents, responses):
-        relations.append(
-            DocumentRelations(document_id=document.document_id, relations=response)
-        )
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        for document in documents:
+            response = await send_extract_relations_request(session, document.text)
+            relations.append(
+                DocumentRelations(document_id=document.document_id, relations=response)
+            )
 
     logging.info(
         f"Extracted relations from {len(documents)} documents in {time.perf_counter() - start_time:.4f} seconds"
