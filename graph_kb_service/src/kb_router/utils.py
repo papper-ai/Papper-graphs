@@ -62,7 +62,7 @@ async def request_relation_extraction(
 ) -> List[DocumentRelations]:
     start_time = time.perf_counter()
 
-    timeout = aiohttp.ClientTimeout(total=60 * 5, connect=5)
+    timeout = aiohttp.ClientTimeout(total=None, connect=5)
     relations = []
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -76,7 +76,7 @@ async def request_relation_extraction(
 
         for task, task_id in tasks:
             try:
-                response = await asyncio.wait_for(task, timeout=60 * 5)
+                response = await asyncio.wait_for(task, timeout=60)
                 relations.append(
                     DocumentRelations(
                         document_id=document.document_id, relations=response
