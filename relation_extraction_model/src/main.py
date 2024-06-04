@@ -1,20 +1,13 @@
-from typing import Annotated
+from fastapi import FastAPI
 
-from fastapi import Body, FastAPI, status
-from fastapi.responses import JSONResponse
-
-from src.utils.relation_extraction import run_relation_extraction
+from src.relation_extraction import relation_extraction_router
 
 app = FastAPI()
 
 
 @app.get("/")
 def root():
-    return {"message": "Hello from seq2seq"}
+    return {"message": "Hello from relation_extraction_model"}
 
 
-@app.post("/extract_relations", status_code=status.HTTP_200_OK)
-def extract_relations(text: Annotated[str, Body()]) -> JSONResponse:
-    relations = run_relation_extraction(text)
-
-    return relations
+app.include_router(relation_extraction_router)

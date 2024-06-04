@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import math
 
@@ -6,9 +7,10 @@ import torch
 from src.config import settings
 from src.model.model import model, tokenizer
 
+tasks = {}
 
-# from https://huggingface.co/Babelscape/rebel-large
-def extract_relations_from_model_output(text: str) -> list:
+
+async def extract_relations_from_model_output(text: str) -> list:
     relations = []
     relation, subject, relation, object_ = "", "", "", ""
     text = text.strip()
@@ -55,7 +57,7 @@ def extract_relations_from_model_output(text: str) -> list:
     return relations
 
 
-def run_relation_extraction(text: str) -> list:
+async def run_relation_extraction(text: str) -> list:
     span_length = 256
 
     inputs = tokenizer([text], return_tensors="pt")
@@ -132,7 +134,7 @@ def run_relation_extraction(text: str) -> list:
             current_span_text = tokenizer.decode(
                 current_span_input_ids, skip_special_tokens=True
             )
-            current_relations = extract_relations_from_model_output(sentence_pred)
+            current_relations = await extract_relations_from_model_output(sentence_pred)
             for relation in current_relations:
                 relation["meta"] = {
                     "information": current_span_text  # Here we use the actual text of the span
@@ -145,3 +147,24 @@ def run_relation_extraction(text: str) -> list:
     )
 
     return relations
+
+
+async def create_task_with_id(task_id: str, text: str):
+    task = asyncio.create_task(run_relation_extraction(text))
+    tasks[task_id] = task
+    try:
+        results = await task
+        return results
+    except asyncio.CancelledError:
+        pass
+    finally:
+        # Clean up after task is done or cancelled
+        tasks.pop(task_id, None)
+
+
+def cancel_task(task_id: str):
+    task = tasks.get(task_id)
+    if task:
+        task.cancel()
+        return True
+    return False

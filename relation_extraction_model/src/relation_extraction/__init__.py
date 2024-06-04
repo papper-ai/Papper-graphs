@@ -1,0 +1,1 @@
+from src.relation_extraction.router import router as relation_extraction_router
