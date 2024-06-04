@@ -21,7 +21,7 @@ from src.kb_router.schemas import (
     DocumentsInput,
 )
 from src.utils.kb import KB
-from src.utils.requests import send_cancel_request, send_extract_relations_request
+from src.utils.requests import send_extract_relations_request
 
 
 async def fill_new_kb(vault_id: UUID, vault_relations: List[DocumentRelations]) -> None:
@@ -60,7 +60,6 @@ async def add_to_kb(vault_id: UUID, vault_relations: List[DocumentRelations]) ->
 async def request_relation_extraction(
     documents: List[Document],
 ) -> List[DocumentRelations]:
-    
     logging.info(f"Starting relation extraction from {len(documents)} documents")
     start_time = time.perf_counter()
 
@@ -85,7 +84,7 @@ async def request_relation_extraction(
                     )
                 )
             except asyncio.TimeoutError:
-                await send_cancel_request(session, task_id)  # Cancel the request
+                task.cancel()
                 logging.warning(
                     f"Extraction timed out for document {document.document_id} with task ID {task_id}"
                 )
