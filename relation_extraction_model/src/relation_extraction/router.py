@@ -14,8 +14,7 @@ router = APIRouter(tags=["Relation Extraction"])
 async def extract_relations(
     request: Annotated[RelationExtractionRequest, Body()],
 ) -> JSONResponse:
-    relations = create_task_with_id(text=request.text, task_id=request.task_id)
-
+    relations = await create_task_with_id(text=request.text, task_id=request.task_id)
     return relations
 
 
