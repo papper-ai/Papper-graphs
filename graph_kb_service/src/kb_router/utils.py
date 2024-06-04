@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import time
+import uuid
 from typing import List
 from uuid import UUID
 
@@ -19,7 +21,7 @@ from src.kb_router.schemas import (
     DocumentsInput,
 )
 from src.utils.kb import KB
-from src.utils.requests import send_extract_relations_request
+from src.utils.requests import send_extract_relations_request, send_cancel_request
 
 
 async def fill_new_kb(vault_id: UUID, vault_relations: List[DocumentRelations]) -> None:
@@ -64,11 +66,27 @@ async def request_relation_extraction(
     relations = []
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
+        tasks = []
         for document in documents:
-            response = await send_extract_relations_request(session, document.text)
-            relations.append(
-                DocumentRelations(document_id=document.document_id, relations=response)
+            task_id = str(uuid.uuid4())  # Generate a unique task ID
+            task = asyncio.create_task(
+                send_extract_relations_request(session, document.text, task_id)
             )
+            tasks.append((task, task_id))
+
+        for task, task_id in tasks:
+            try:
+                response = await asyncio.wait_for(task, timeout=60 * 5)
+                relations.append(
+                    DocumentRelations(
+                        document_id=document.document_id, relations=response
+                    )
+                )
+            except asyncio.TimeoutError:
+                await send_cancel_request(session, task_id)  # Cancel the request
+                logging.error(
+                    f"Extraction timed out for document {document.document_id} with task ID {task_id}"
+                )
 
     logging.info(
         f"Extracted relations from {len(documents)} documents in {time.perf_counter() - start_time:.4f} seconds"
