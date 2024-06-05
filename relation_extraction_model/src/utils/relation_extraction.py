@@ -104,7 +104,7 @@ def run_relation_extraction(text: str, cancellation_token: CancellationToken) ->
     batch_size = settings.batch_size
 
     for batch_start in range(0, len(tensor_ids), batch_size):
-        while not cancellation_token.is_cancelled():
+        if not cancellation_token.is_cancelled():
             batch_end = min(batch_start + batch_size, len(tensor_ids))
 
             batch_inputs = {
@@ -119,7 +119,7 @@ def run_relation_extraction(text: str, cancellation_token: CancellationToken) ->
                     **batch_inputs,
                     **gen_kwargs,
                 ).cpu()
-
+           
             # Decode relations
             batch_decoded_preds = tokenizer.batch_decode(
                 batch_generated_tokens, skip_special_tokens=False
@@ -140,7 +140,7 @@ def run_relation_extraction(text: str, cancellation_token: CancellationToken) ->
                     }
 
                 relations.extend(current_relations)
-        if cancellation_token.is_cancelled():
+        else:
             logging.warning("Task cancelled due to timeout")
             return TimeoutError("Task cancelled due to timeout")
 
