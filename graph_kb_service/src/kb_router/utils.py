@@ -77,7 +77,7 @@ async def request_relation_extraction(
 
         for task, task_id in tasks:
             try:
-                async with asyncio.timeout(5):
+                async with asyncio.timeout(59):
                     start_time = time.perf_counter()
 
                     response = await task
@@ -109,7 +109,8 @@ async def create_knowledge_base(
 
     relations = await request_relation_extraction(documents)
 
-    await fill_new_kb(vault_id, relations)
+    if relations:
+        await fill_new_kb(vault_id, relations)
 
 
 async def add_document(input: DocumentInput) -> None:
@@ -118,7 +119,8 @@ async def add_document(input: DocumentInput) -> None:
 
     relations = await request_relation_extraction([document])
 
-    await add_to_kb(vault_id, relations)
+    if relations:
+        await add_to_kb(vault_id, relations)
 
 
 async def drop_kb(vault_id: UUID) -> None:
