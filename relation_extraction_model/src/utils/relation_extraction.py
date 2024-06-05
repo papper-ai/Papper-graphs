@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import math
 
@@ -6,11 +5,10 @@ import torch
 
 from src.config import settings
 from src.model.model import model, tokenizer
+from src.utils.cancellation_token import CancellationToken
 
-tasks = {}
 
-
-async def extract_relations_from_model_output(text: str) -> list:
+def extract_relations_from_model_output(text: str) -> list:
     relations = []
     relation, subject, relation, object_ = "", "", "", ""
     text = text.strip()
@@ -57,7 +55,7 @@ async def extract_relations_from_model_output(text: str) -> list:
     return relations
 
 
-async def run_relation_extraction(text: str) -> list:
+def run_relation_extraction(text: str, cancellation_token: CancellationToken) -> list:
     span_length = 256
 
     inputs = tokenizer([text], return_tensors="pt")
@@ -106,65 +104,48 @@ async def run_relation_extraction(text: str) -> list:
     batch_size = settings.batch_size
 
     for batch_start in range(0, len(tensor_ids), batch_size):
-        batch_end = min(batch_start + batch_size, len(tensor_ids))
+        while not cancellation_token.is_cancelled():
+            batch_end = min(batch_start + batch_size, len(tensor_ids))
 
-        batch_inputs = {
-            "input_ids": torch.stack(tensor_ids[batch_start:batch_end]).to("cuda"),
-            "attention_mask": torch.stack(tensor_masks[batch_start:batch_end]).to(
-                "cuda"
-            ),
-        }
+            batch_inputs = {
+                "input_ids": torch.stack(tensor_ids[batch_start:batch_end]).to("cuda"),
+                "attention_mask": torch.stack(tensor_masks[batch_start:batch_end]).to(
+                    "cuda"
+                ),
+            }
 
-        with torch.no_grad():
-            batch_generated_tokens = model.generate(
-                **batch_inputs,
-                **gen_kwargs,
-            ).cpu()
+            with torch.no_grad():
+                batch_generated_tokens = model.generate(
+                    **batch_inputs,
+                    **gen_kwargs,
+                ).cpu()
 
-        # Decode relations
-        batch_decoded_preds = tokenizer.batch_decode(
-            batch_generated_tokens, skip_special_tokens=False
-        )
-
-        # Process decoded relations
-        for i, sentence_pred in enumerate(batch_decoded_preds):
-            current_span_input_ids = batch_inputs["input_ids"][
-                i // num_return_sequences
-            ]
-            current_span_text = tokenizer.decode(
-                current_span_input_ids, skip_special_tokens=True
+            # Decode relations
+            batch_decoded_preds = tokenizer.batch_decode(
+                batch_generated_tokens, skip_special_tokens=False
             )
-            current_relations = await extract_relations_from_model_output(sentence_pred)
-            for relation in current_relations:
-                relation["meta"] = {
-                    "information": current_span_text  # Here we use the actual text of the span
-                }
 
-            relations.extend(current_relations)
+            # Process decoded relations
+            for i, sentence_pred in enumerate(batch_decoded_preds):
+                current_span_input_ids = batch_inputs["input_ids"][
+                    i // num_return_sequences
+                ]
+                current_span_text = tokenizer.decode(
+                    current_span_input_ids, skip_special_tokens=True
+                )
+                current_relations = extract_relations_from_model_output(sentence_pred)
+                for relation in current_relations:
+                    relation["meta"] = {
+                        "information": current_span_text  # Here we use the actual text of the span
+                    }
+
+                relations.extend(current_relations)
+        if cancellation_token.is_cancelled():
+            logging.warning("Task cancelled due to timeout")
+            return TimeoutError("Task cancelled due to timeout")
 
     logging.info(
         f"Finished running relation extraction on {num_tokens} token text. Extracted {len(relations)} relations"
     )
 
     return relations
-
-
-async def create_task_with_id(task_id: str, text: str):
-    task = asyncio.create_task(run_relation_extraction(text))
-    tasks[task_id] = task
-    try:
-        results = await task
-        return results
-    except asyncio.CancelledError:
-        pass
-    finally:
-        # Clean up after task is done or cancelled
-        tasks.pop(task_id, None)
-
-
-def cancel_task(task_id: str):
-    task = tasks.get(task_id)
-    if task:
-        task.cancel()
-        return True
-    return False
