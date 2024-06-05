@@ -29,6 +29,7 @@ class Input(BaseModel):
 
 class SearchResult(BaseModel):
     document_id: UUID
+    document_name: str | None
     information: str
 
 
