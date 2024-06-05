@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 class Document(BaseModel):
     document_id: UUID
+    document_name: str
     text: str
 
 
@@ -21,6 +22,7 @@ class DocumentInput(BaseModel):
 
 class DocumentRelations(BaseModel):
     document_id: UUID
+    document_name: str
     relations: List
 
 

@@ -107,7 +107,7 @@ async def create_knowledge_base(
         CreateRequestToKBService(
             vault_id=vault_id,
             documents=[
-                DocumentText(document_id=doc.id, text=doc.text) for doc in documents
+                DocumentText(document_id=doc.id, document_name=doc.name, text=doc.text) for doc in documents
             ],
         )
     )
@@ -123,7 +123,7 @@ async def add_document_to_knowledge_base(vault_id: UUID, document: Document) -> 
     upload_request_body = jsonable_encoder(
         AddDocumentRequestToKBService(
             vault_id=vault_id,
-            document=DocumentText(document_id=document.id, text=document.text),
+            document=DocumentText(document_id=document.id, document_name=document.name, text=document.text),
         )
     )
 

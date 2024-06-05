@@ -13,8 +13,9 @@ class KB:
     async def relation_exists(self, r1):
         return any([await self.relations_equal(r1, r2) for r2 in self.relations])
 
-    async def add_relation(self, relation, document_id):
+    async def add_relation(self, relation, document_id, document_name):
         relation["meta"]["document_id"] = document_id
+        relation["meta"]["document_name"] = document_name
         if not await self.relation_exists(relation):
             self.relations.append(relation)
 

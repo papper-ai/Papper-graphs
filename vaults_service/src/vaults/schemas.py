@@ -28,6 +28,7 @@ class CreateVaultRequest(BaseModel):
 
 class DocumentText(BaseModel):
     document_id: UUID
+    document_name: UUID
     text: str
 
 

@@ -29,8 +29,9 @@ async def fill_new_kb(vault_id: UUID, vault_relations: List[DocumentRelations]) 
 
     for document_relations in vault_relations:
         document_id = document_relations.document_id
+        document_name = document_relations.document_name
         for relation in document_relations.relations:
-            await kb.add_relation(relation, document_id)
+            await kb.add_relation(relation, document_id, document_name)
 
     # Filter and clean the data
     await kb.filter_relations()
@@ -46,8 +47,9 @@ async def add_to_kb(vault_id: UUID, vault_relations: List[DocumentRelations]) ->
 
     for document_relations in vault_relations:
         document_id = document_relations.document_id
+        document_name = document_relations.document_name
         for relation in document_relations.relations:
-            await kb.add_relation(relation, document_id)
+            await kb.add_relation(relation, document_id, document_name)
 
     # Filter and clean the data
     await kb.filter_relations()
@@ -84,7 +86,7 @@ async def request_relation_extraction(
 
                     relations.append(
                         DocumentRelations(
-                            document_id=document.document_id, relations=response
+                            document_id=document.document_id, document_name=document.document_name, relations=response
                         )
                     )
 
