@@ -21,7 +21,7 @@ from src.kb_router.schemas import (
     DocumentsInput,
 )
 from src.utils.kb import KB
-from src.utils.requests import send_extract_relations_request
+from src.utils.requests import send_cancel_request, send_extract_relations_request
 
 
 async def fill_new_kb(vault_id: UUID, vault_relations: List[DocumentRelations]) -> None:
@@ -61,13 +61,13 @@ async def request_relation_extraction(
     documents: List[Document],
 ) -> List[DocumentRelations]:
     logging.info(f"Starting relation extraction from {len(documents)} documents")
-    start_time = time.perf_counter()
 
-    timeout = aiohttp.ClientTimeout(total=None, connect=5)
-    relations = []
+    timeout = aiohttp.ClientTimeout(connect=5)
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
         tasks = []
+        relations = []
+
         for document in documents:
             task_id = str(uuid.uuid4())  # Generate a unique task ID
             task = asyncio.create_task(
@@ -77,24 +77,26 @@ async def request_relation_extraction(
 
         for task, task_id in tasks:
             try:
-                response = await asyncio.wait_for(task, timeout=60)
-                relations.append(
-                    DocumentRelations(
-                        document_id=document.document_id, relations=response
+                async with asyncio.timeout(5):
+                    start_time = time.perf_counter()
+
+                    response = await task
+
+                    relations.append(
+                        DocumentRelations(
+                            document_id=document.document_id, relations=response
+                        )
                     )
-                )
+
+                    logging.info(
+                        f"Extracted relations from document {document.document_id} in {time.perf_counter() - start_time:.4f} seconds"
+                    )
             except asyncio.TimeoutError:
                 logging.warning(
                     f"Task timed out, cancellation requested for document {document.document_id} with task ID {task_id}"
                 )
-                task.cancel()
-                logging.info(
-                    f"Task {task_id} cancelled"
-                )
-
-    logging.info(
-        f"Extracted relations from {len(documents)} documents in {time.perf_counter() - start_time:.4f} seconds"
-    )
+                await send_cancel_request(session, task_id)
+                logging.info(f"Task {task_id} cancelled")
 
     return relations
 
