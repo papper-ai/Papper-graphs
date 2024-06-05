@@ -10,7 +10,7 @@ async def send_extract_relations_request(
         f"{settings.remote_url}/extract_relations",
         json={"text": text, "task_id": task_id},
     )
-    return response.json()
+    return await response.json()
 
 
 async def send_cancel_request(session: ClientSession, task_id: str) -> None:
