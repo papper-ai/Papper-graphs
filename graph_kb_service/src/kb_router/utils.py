@@ -84,9 +84,12 @@ async def request_relation_extraction(
                     )
                 )
             except asyncio.TimeoutError:
-                task.cancel()
                 logging.warning(
-                    f"Extraction timed out for document {document.document_id} with task ID {task_id}"
+                    f"Task timed out, cancellation requested for document {document.document_id} with task ID {task_id}"
+                )
+                task.cancel()
+                logging.info(
+                    f"Task {task_id} cancelled"
                 )
 
     logging.info(
