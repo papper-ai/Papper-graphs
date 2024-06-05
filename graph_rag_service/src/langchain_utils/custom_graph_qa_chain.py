@@ -255,22 +255,13 @@ class CustomGraphCypherQAChain(Chain):
                         ).records
                     ]
                     
-                    seen = set()
-                    deduplicated_result = []
-
-                    for document in result:
-                        # Convert the dictionary to a hashable tuple of its items
-                        identifier = tuple(sorted(document.items()))
-                        if identifier not in seen:
-                            deduplicated_result.append(document)
-                            seen.add(identifier)
-                    
-                    results.append(deduplicated_result)
-                    logging.info([context["information"] for context in deduplicated_result])
-                    context.extend([context["information"] for context in deduplicated_result])
+                    results.append(result)
+                    context.extend([context["information"] for context in result])
                 except Exception as e:
                     logging.error(e)
-            logging.info(context)
+            
+            # Deduplicate context (a list of strings) for LLM input
+            context = list(set(context))
         else:
             results = []
             context = []

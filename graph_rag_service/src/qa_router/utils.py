@@ -41,5 +41,8 @@ async def generate_answer(input: Input) -> Answer:
                     )
                 except Exception as e:
                     logging.error(e)
-
+                    
+            # Deduplicate traceback
+            traceback = [dict(d) for d in {frozenset(d.items()) for d in traceback}]
+            
     return Answer(content=answer, traceback=traceback)
