@@ -245,7 +245,7 @@ class CustomGraphCypherQAChain(Chain):
                     result = [
                         {
                             "document_id": record["r"]["document_id"],
-                            "document_name": record["r"]["document_name"] if record["r"]["document_name"] else None,
+                            "document_name": record["r"]["document_name"],
                             "information": record["r"]["information"],
                         }
                         for record in (
