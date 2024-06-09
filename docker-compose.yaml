@@ -1,6 +1,7 @@
 services:
   neo4j:
     image: neo4j:5.17.0-enterprise
+    restart: unless-stopped
     volumes:
       - graph_data:/data
     environment:
@@ -13,6 +14,7 @@ services:
       - vaults_services_network
   graph_kb_service:
     build: graph_kb_service
+    restart: unless-stopped
     volumes:
       - ./graph_kb_service:/usr/src/graph_kb_service
     env_file:
@@ -27,6 +29,7 @@ services:
       - vaults_services_network
   graph_rag_service:
     build: graph_rag_service
+    restart: unless-stopped
     volumes:
       - ./graph_rag_service:/usr/src/graph_rag_service
     env_file:
@@ -44,7 +47,6 @@ services:
 
 volumes:
   graph_data:
-
 
 networks:
   vaults_services_network:
