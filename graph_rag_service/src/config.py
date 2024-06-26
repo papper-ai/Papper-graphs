@@ -14,7 +14,6 @@ BASE_DIR = Path(__file__).parent
 class Settings(BaseSettings):
     neo4j_user: str = "neo4j"
     neo4j_password: str
-    gigachat_credentials: str
     remote_url: str = "http://host.docker.internal:8001"
     
     @property
