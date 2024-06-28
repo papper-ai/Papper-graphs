@@ -13,12 +13,13 @@ BASE_DIR = Path(__file__).parent
 
 class Settings(BaseSettings):
     neo4j_user: str = "neo4j"
+    neo4j_host: str = "neo4j"
     neo4j_password: str
     remote_url: str = "http://host.docker.internal:8003"
 
     @property
     def neo4j_uri(self) -> str:
-        return "bolt://neo4j:7687"
+        return f"bolt://{self.neo4j_host}:7687"
 
     class Config:
         extra = "ignore"
